@@ -11,24 +11,24 @@ public class MatrixMultiplierMultyThreading : IMatrixMultiplier
         }
         else
         {
-            var threads = new Thread[a.GetSize.m, b.GetSize.n];
+            var threads = new Thread[a.GetSize.m];
             var result = new Matrix(a.GetSize.m, b.GetSize.n);
             for (var i = 0; i < a.GetSize.m; ++i)
             {
-                for (var j = 0; j < b.GetSize.n; ++j)
+                var localI = i;
+                threads[localI] = new Thread(() =>
                 {
-                    var localI = i;
-                    var localJ = j;
-                    threads[localI, localJ] = new Thread(() =>
+                    for (var t = 0; t < b.GetSize.n; ++t)
                     {
                         var sum = 0;
                         for (var k = 0; k < a.GetSize.n; ++k)
                         {
-                            sum += a.GetElementByIndexes(localI, k) * b.GetElementByIndexes(k, localJ);
+                            sum += a.GetElementByIndexes(localI, k) * b.GetElementByIndexes(k, t);
                         }
-                        result.SetElementByIndexes(localI, localJ, sum);
-                    });
-                }
+                        result.SetElementByIndexes(localI, t, sum);
+                    }
+                });
+                
             }
             foreach (var thread in threads)
             {

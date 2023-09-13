@@ -1,0 +1,3 @@
+|Value|Number Of Elements|MultyThread|SingleThread|
+expected value10	|expected value|   10|420.95|451.34|
+|variance|   10|25.388|25.771|

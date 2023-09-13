@@ -19,7 +19,7 @@ public static class Experiments
         return matrix;
     }
 
-	public static double CountExpectedValue(double[] resultsOfExperiments)
+	public static double CountExpectedValue(double[] resultsOfExperiments, int precision = 9)
     { 
         if (resultsOfExperiments.Length <= 0)
         {
@@ -34,19 +34,22 @@ public static class Experiments
             }
             sum += resultsOfExperiments[i];
         }
-        return sum / resultsOfExperiments.Length;
+        return Math.Round(sum / resultsOfExperiments.Length, precision);
     }
 
-    public static double CountVariance(double[] resultsOfExperiments)
+    public static double CountVariance(double[] resultsOfExperiments, int precision = 9, double? expectedValue = null)
     {
         var sum = 0.0;
-        var expectedValue = CountExpectedValue(resultsOfExperiments);
+        if (expectedValue == null)
+        {
+            expectedValue = CountExpectedValue(resultsOfExperiments);
+        } 
         for (var i = 0; i < resultsOfExperiments.Length; ++i)
         {
-            sum += Math.Pow(resultsOfExperiments[i] - expectedValue, 2);
+            sum += Math.Pow(resultsOfExperiments[i] - (double)expectedValue, 2);
         }
         sum = sum / (resultsOfExperiments.Length * (resultsOfExperiments.Length - 1));
-        return Math.Sqrt(sum);
+        return Math.Round(Math.Sqrt(sum), precision);
     }
 
     public static double[] SetExperiment(Matrix a, Matrix b, IMatrixMultiplier multiplier)
