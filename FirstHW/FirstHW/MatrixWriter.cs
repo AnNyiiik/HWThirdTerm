@@ -1,6 +1,9 @@
 ﻿using System;
 namespace FirstHW;
 
+/// <summary>
+/// This class is created to write a matrix to file.
+/// </summary>
 public static class MatrixWriter
 {
     public static void WriteMatrixToFile(string filePath, Matrix matrix)

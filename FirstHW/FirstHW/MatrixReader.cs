@@ -1,5 +1,9 @@
 ﻿namespace FirstHW;
 
+/// <summary>
+/// This class reads matrix form file (1st string - number of rows and columns,
+/// others - rows, each element separated by space).
+/// </summary>
 public static class MatrixReader
 {
     public static Matrix ReadMatrixesFromFile(string filePath)

@@ -1,5 +1,8 @@
 ﻿namespace FirstHW;
 
+/// <summary>
+/// This class created to multiply matrixes using single-threading.
+/// </summary>
 public class MatrixMultiplierSingleThreading : IMatrixMultiplier
 {
 	public Matrix Multiply(Matrix a, Matrix b)

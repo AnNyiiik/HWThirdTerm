@@ -1,5 +1,8 @@
 ﻿namespace FirstHW;
 
+/// <summary>
+/// This class creates matrix and gives an opportunity to change/get its elements.
+/// </summary>
 public class Matrix
 {
     int[,] MatrixItem;

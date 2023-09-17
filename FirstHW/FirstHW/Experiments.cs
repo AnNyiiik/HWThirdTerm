@@ -1,10 +1,19 @@
 ﻿namespace FirstHW;
 using System.Diagnostics;
 
+/// <summary>
+/// Class is designed to set experiments with matrix multiplication.
+/// </summary>
 public static class Experiments
 {
     private const int N = 100;
 
+    /// <summary>
+    /// Generates matrix
+    /// </summary>
+    /// <param name="m">rows</param>
+    /// <param name="n">columns</param>
+    /// <returns>matrix</returns>
 	public static Matrix GenerateMatrix(int m, int n)
 	{
 		var matrix = new Matrix(m, n);
@@ -19,6 +28,13 @@ public static class Experiments
         return matrix;
     }
 
+    /// <summary>
+    /// Counts an expected value of set of experiment's results.
+    /// </summary>
+    /// <param name="resultsOfExperiments"></param>
+    /// <param name="precision"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
 	public static double CountExpectedValue(double[] resultsOfExperiments, int precision = 9)
     { 
         if (resultsOfExperiments.Length <= 0)
@@ -37,6 +53,13 @@ public static class Experiments
         return Math.Round(sum / resultsOfExperiments.Length, precision);
     }
 
+    /// <summary>
+    /// Counts a variance of set of experiment's results.
+    /// </summary>
+    /// <param name="resultsOfExperiments"></param>
+    /// <param name="precision"></param>
+    /// <param name="expectedValue"></param>
+    /// <returns></returns>
     public static double CountVariance(double[] resultsOfExperiments, int precision = 9, double? expectedValue = null)
     {
         var sum = 0.0;
@@ -52,6 +75,13 @@ public static class Experiments
         return Math.Round(Math.Sqrt(sum), precision);
     }
 
+    /// <summary>
+    /// Set an experiment with matrix multiplication.
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <param name="multiplier"></param>
+    /// <returns></returns>
     public static double[] SetExperiment(Matrix a, Matrix b, IMatrixMultiplier multiplier)
     {
         Stopwatch stopwatch = new Stopwatch();
