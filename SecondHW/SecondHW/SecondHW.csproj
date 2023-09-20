@@ -9,5 +9,6 @@
   <ItemGroup>
     <None Remove="LazyMultyThreadImpl.cs~" />
     <None Remove="LazySingleThreadImpl.cs~" />
+    <None Remove="Class1.cs~" />
   </ItemGroup>
 </Project>
