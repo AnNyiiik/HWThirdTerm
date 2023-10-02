@@ -34,7 +34,6 @@ foreach (var size in sizesOfMatrixes)
 var result = table.ToString();
 using var writer = new StreamWriter("ResultsOfExperiments.txt");
 writer.Write(result);
-Console.Write("hi");
 Console.Write(result);
 
 //find such data sizes at which the differences in the speed of work are significant
