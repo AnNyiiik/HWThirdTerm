@@ -24,6 +24,7 @@
     <None Remove="Matrix.cs~" />
     <None Remove="Experiments.cs~" />
     <None Remove="ResultsOfExperiment.txt~" />
+    <None Remove="ResultsOfExperiments.txt~" />
   </ItemGroup>
   <ItemGroup>
     <None Update="ResultsOfExperiments.txt">

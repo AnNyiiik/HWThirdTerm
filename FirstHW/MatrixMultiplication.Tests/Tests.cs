@@ -66,15 +66,13 @@ public class Tests
                     line = reader.ReadLine()?.Split();
                     for (var j = 0; j < n; ++j)
                     {
-                        if (line != null)
-                        {
-                            Assert.That(Int32.Parse(line[j]), Is.EqualTo(result.GetElementByIndexes(i, j)));
-                        }
-                        else { Assert.True(false); }
+                        Assert.NotNull(line);
+                        Assert.That(Int32.Parse(line[j]), Is.EqualTo(result.
+                            GetElementByIndexes(i, j)));
                     }
                 }
             }
-            else { Assert.True(false); }
+            else { Assert.NotNull(line); }
         }
     }
 }

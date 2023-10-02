@@ -10,8 +10,6 @@ var table = new ConsoleTable("Value",
 
 foreach (var size in sizesOfMatrixes)
 {
-    //Console.WriteLine("Set an experiment with {0}*{0} matrixes", size);
-
     var a = Matrix.GenerateMatrixWithRandomNumbers(size, size);
     var b = Matrix.GenerateMatrixWithRandomNumbers(size, size);
     var resultsMultyThreading = Experiments.
@@ -24,11 +22,6 @@ foreach (var size in sizesOfMatrixes)
     var expectedValueOfSingleThreading = Experiments.
         CountExpectedValue(resultsSingleThreading, 3);
 
-    //Console.WriteLine("The expected value of multythread-method's results is " +
-        //"{0} milliseconds", expectedValueOfMultyThreading);
-    //Console.WriteLine("The expected value of singlethread-method's results is {0} " +
-        //"milliseconds", expectedValueOfSingleThreading);
-
     var varianceOfMultyThreading = Experiments.CountVariance(resultsMultyThreading,
         3, expectedValueOfMultyThreading);
     var varianceOfSingleThreading = Experiments.CountVariance(resultsSingleThreading,
@@ -37,15 +30,11 @@ foreach (var size in sizesOfMatrixes)
     table.AddRow("expected value", size.ToString(), expectedValueOfMultyThreading,
         expectedValueOfSingleThreading);
     table.AddRow("variance", size.ToString(), varianceOfMultyThreading, varianceOfSingleThreading);
-
-    //Console.WriteLine("The variance of multythread-method's results is " +
-        //"{0} milliseconds", varianceOfMultyThreading);
-    //Console.WriteLine("The variance of singlethread-method's results is " +
-        //"{0} milliseconds", varianceOfSingleThreading);
 }
 var result = table.ToString();
 using var writer = new StreamWriter("ResultsOfExperiments.txt");
 writer.Write(result);
+Console.Write("hi");
 Console.Write(result);
 
 //find such data sizes at which the differences in the speed of work are significant
