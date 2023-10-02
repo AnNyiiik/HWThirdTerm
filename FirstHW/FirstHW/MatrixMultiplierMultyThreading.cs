@@ -5,33 +5,39 @@
 /// </summary>
 public class MatrixMultiplierMultyThreading : IMatrixMultiplier
 {
-	public Matrix Multiply(Matrix a, Matrix b)
+	public Matrix Multiply(Matrix firstMatrix, Matrix secondMatrix)
     {
-        if (a.GetSize.n != b.GetSize.m)
+        if (firstMatrix.GetSize.n != secondMatrix.GetSize.m)
         {
             throw new ArgumentException("The incorrect matrixes' sizes for " +
                 "multiplication");
         }
         else
         {
-            var threads = new Thread[a.GetSize.m];
-            var result = new Matrix(a.GetSize.m, b.GetSize.n);
-            for (var i = 0; i < a.GetSize.m; ++i)
+            var numberOfThreads = Environment.ProcessorCount;
+            var threads = new Thread[numberOfThreads];
+            var chunkSize = (firstMatrix.GetSize.m / numberOfThreads) + 1;
+            var result = new Matrix(firstMatrix.GetSize.m, secondMatrix.GetSize.n);
+            for (var i = 0; i < numberOfThreads; ++i)
             {
                 var localI = i;
-                threads[localI] = new Thread(() =>
+                threads[i] = new Thread(() =>
                 {
-                    for (var t = 0; t < b.GetSize.n; ++t)
+                    for (var j = localI * chunkSize; j < (localI + 1) * chunkSize
+                    && j < firstMatrix.GetSize.m; ++j)
                     {
-                        var sum = 0;
-                        for (var k = 0; k < a.GetSize.n; ++k)
+                        for (var k = 0; k < secondMatrix.GetSize.n; ++k)
                         {
-                            sum += a.GetElementByIndexes(localI, k) * b.GetElementByIndexes(k, t);
+                            var sum = 0;
+                            for (var t = 0; t < firstMatrix.GetSize.n; ++t)
+                            {
+                                sum += firstMatrix.GetElementByIndexes(j, t)
+                                    * secondMatrix.GetElementByIndexes(t, k);
+                            }
+                            result.SetElementByIndexes(j, k, sum);
                         }
-                        result.SetElementByIndexes(localI, t, sum);
                     }
                 });
-                
             }
             foreach (var thread in threads)
             {

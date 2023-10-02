@@ -11,4 +11,18 @@
     <PackageReference Include="ConsoleTableExt" Version="3.2.0" />
     <PackageReference Include="ConsoleTables" Version="2.5.0" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="Result.cs~" />
+    <None Remove="ResultOfExperiments.cs~" />
+    <None Remove="Program.cs~" />
+    <None Remove="MatrixWriter.cs~" />
+    <None Remove="MatrixReader.cs~" />
+    <None Remove="MatrixMultiplierSingleThreading.cs~" />
+    <None Remove="MatrixMultiplierMultyThreading.cs~" />
+    <None Remove="MatrixMultiplier.cs~" />
+    <None Remove="Matrixes.txt~" />
+    <None Remove="Matrix.cs~" />
+    <None Remove="Experiments.cs~" />
+    <None Remove="ResultsOfExperiment.txt~" />
+  </ItemGroup>
 </Project>

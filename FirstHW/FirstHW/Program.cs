@@ -10,10 +10,10 @@ var table = new ConsoleTable("Value",
 
 foreach (var size in sizesOfMatrixes)
 {
-    Console.WriteLine("Set an experiment with {0}*{0} matrixes", size);
+    //Console.WriteLine("Set an experiment with {0}*{0} matrixes", size);
 
-    var a = Experiments.GenerateMatrix(size, size);
-    var b = Experiments.GenerateMatrix(size, size);
+    var a = Matrix.GenerateMatrixWithRandomNumbers(size, size);
+    var b = Matrix.GenerateMatrixWithRandomNumbers(size, size);
     var resultsMultyThreading = Experiments.
         SetExperiment(a, b, new MatrixMultiplierMultyThreading());
     var resultsSingleThreading = Experiments.
@@ -24,10 +24,10 @@ foreach (var size in sizesOfMatrixes)
     var expectedValueOfSingleThreading = Experiments.
         CountExpectedValue(resultsSingleThreading, 3);
 
-    Console.WriteLine("The expected value of multythread-method's results is " +
-        "{0} milliseconds", expectedValueOfMultyThreading);
-    Console.WriteLine("The expected value of singlethread-method's results is {0} " +
-        "milliseconds", expectedValueOfSingleThreading);
+    //Console.WriteLine("The expected value of multythread-method's results is " +
+        //"{0} milliseconds", expectedValueOfMultyThreading);
+    //Console.WriteLine("The expected value of singlethread-method's results is {0} " +
+        //"milliseconds", expectedValueOfSingleThreading);
 
     var varianceOfMultyThreading = Experiments.CountVariance(resultsMultyThreading,
         3, expectedValueOfMultyThreading);
@@ -43,15 +43,16 @@ foreach (var size in sizesOfMatrixes)
     Console.WriteLine("The variance of singlethread-method's results is " +
         "{0} milliseconds", varianceOfSingleThreading);
 }
-table.Write();
+Console.Write(table.ToStringAlternative());
+
 
 //find such data sizes at which the differences in the speed of work are significant
 var matrixSize = 2;
 var difference = 0.0;
 while (Math.Abs(difference) < 100)
 {
-    var a = Experiments.GenerateMatrix(matrixSize, matrixSize);
-    var b = Experiments.GenerateMatrix(matrixSize, matrixSize);
+    var a = Matrix.GenerateMatrixWithRandomNumbers(matrixSize, matrixSize);
+    var b = Matrix.GenerateMatrixWithRandomNumbers(matrixSize, matrixSize);
     var resultsMultyThreading = Experiments.
         SetExperiment(a, b, new MatrixMultiplierMultyThreading());
     var resultsSingleThreading = Experiments.

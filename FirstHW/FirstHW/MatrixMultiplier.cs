@@ -2,5 +2,5 @@
 
 public interface IMatrixMultiplier
 {
-    public Matrix Multiply(Matrix a, Matrix b);
+    public Matrix Multiply(Matrix firstMatrix, Matrix secondMatrix);
 }

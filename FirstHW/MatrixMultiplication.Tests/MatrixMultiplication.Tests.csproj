@@ -20,4 +20,15 @@
   <ItemGroup>
     <ProjectReference Include="..\FirstHW\MatrixMultiplication.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="ComplexCaseFirstMatrix.txt~" />
+    <None Remove="ComplexCaseCorrectResult.txt~" />
+    <None Remove="ComplexCaseSecondMatrix.txt~" />
+    <None Remove="ComplexCase.txt~" />
+    <None Remove="SimpleCaseCorrectResult.txt~" />
+    <None Remove="SimpleCaseFirstMatrix.txt~" />
+    <None Remove="SimpleCaseSecondMatrix.txt~" />
+    <None Remove="SimpleCase.txt~" />
+    <None Remove="Tests.cs~" />
+  </ItemGroup>
 </Project>

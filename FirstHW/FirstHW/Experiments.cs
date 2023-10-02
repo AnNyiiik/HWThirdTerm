@@ -7,27 +7,6 @@ using System.Diagnostics;
 public static class Experiments
 {
     private const int N = 100;
-
-    /// <summary>
-    /// Generates matrix
-    /// </summary>
-    /// <param name="m">rows</param>
-    /// <param name="n">columns</param>
-    /// <returns>matrix</returns>
-	public static Matrix GenerateMatrix(int m, int n)
-	{
-		var matrix = new Matrix(m, n);
-        var random = new Random();
-		for (var i = 0; i < m; ++i)
-		{
-            for (var j = 0; j < n; ++j)
-            {
-                matrix.SetElementByIndexes(i, j, random.Next(-100, 100));
-            }
-        }
-        return matrix;
-    }
-
     /// <summary>
     /// Counts an expected value of set of experiment's results.
     /// </summary>

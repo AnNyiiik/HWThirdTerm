@@ -5,21 +5,41 @@
 /// </summary>
 public class Matrix
 {
-    int[,] MatrixItem;
+    private int[,] MatrixItem;
 
-    private (int m, int n) Size;
+    private (int height, int width) Size;
 
-    public (int m, int n) GetSize
-    {
-        get { return (Size.m, Size.n); }
-    }
+    public (int m, int n) GetSize { get => Size; } 
 
     public Matrix(int m, int n)
     {
         MatrixItem = new int[m, n];
-        Size.m = m;
-        Size.n = n;
+        Size.height = m;
+        Size.width = n;
     }
+
+    private static Random random = new Random();
+
+    /// <summary>
+    /// Generates matrix
+    /// </summary>
+    /// <param name="m">rows</param>
+    /// <param name="n">columns</param>
+    /// <returns>matrix</returns>
+	public static Matrix GenerateMatrixWithRandomNumbers(int m, int n)
+    {
+        var matrix = new Matrix(m, n);
+        for (var i = 0; i < m; ++i)
+        {
+            for (var j = 0; j < n; ++j)
+            {
+                matrix.SetElementByIndexes(i, j, random.Next(-100, 100));
+            }
+        }
+        return matrix;
+    }
+
+
 
     public void SetElementByIndexes(int i, int j, int value)
     {
@@ -33,7 +53,7 @@ public class Matrix
 
     public int GetElementByIndexes(int i, int j)
     {
-        if (i < 0 || i >= Size.m || j < 0 || j >= Size.n)
+        if (i < 0 || i >= Size.height || j < 0 || j >= Size.width)
         {
             throw new ArgumentException("incorrect indexes");
         }
@@ -42,9 +62,9 @@ public class Matrix
 
     public void PrintMatrix()
     {
-        for (var i = 0; i < Size.m; ++i)
+        for (var i = 0; i < Size.height; ++i)
         {
-            for (var j = 0; i < Size.n; ++i)
+            for (var j = 0; i < Size.height; ++i)
             {
                 Console.Write(MatrixItem[i, j] + " ");
             }
