@@ -25,4 +25,9 @@
     <None Remove="Experiments.cs~" />
     <None Remove="ResultsOfExperiment.txt~" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="ResultsOfExperiments.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

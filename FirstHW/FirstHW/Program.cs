@@ -2,7 +2,7 @@
 using ConsoleTables;
 using System.Drawing;
 
-int[] sizesOfMatrixes = { 10, 50, 100, 1000 };
+int[] sizesOfMatrixes = { 10, 50, 100};
 
 //experiments for matrixes
 var table = new ConsoleTable("Value",
@@ -38,13 +38,15 @@ foreach (var size in sizesOfMatrixes)
         expectedValueOfSingleThreading);
     table.AddRow("variance", size.ToString(), varianceOfMultyThreading, varianceOfSingleThreading);
 
-    Console.WriteLine("The variance of multythread-method's results is " +
-        "{0} milliseconds", varianceOfMultyThreading);
-    Console.WriteLine("The variance of singlethread-method's results is " +
-        "{0} milliseconds", varianceOfSingleThreading);
+    //Console.WriteLine("The variance of multythread-method's results is " +
+        //"{0} milliseconds", varianceOfMultyThreading);
+    //Console.WriteLine("The variance of singlethread-method's results is " +
+        //"{0} milliseconds", varianceOfSingleThreading);
 }
-Console.Write(table.ToStringAlternative());
-
+var result = table.ToString();
+using var writer = new StreamWriter("ResultsOfExperiments.txt");
+writer.Write(result);
+Console.Write(result);
 
 //find such data sizes at which the differences in the speed of work are significant
 var matrixSize = 2;

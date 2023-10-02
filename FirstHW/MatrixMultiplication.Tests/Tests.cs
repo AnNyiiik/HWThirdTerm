@@ -7,18 +7,18 @@ public class Tests
     private static IEnumerable<TestCaseData> TestingMultiplicationData
          => new TestCaseData[]
          {
-             new TestCaseData(new MatrixMultiplierMultyThreading(), "..//..//.." +
-                 "//SimpleCaseFirstMatrix.txt", "..//..//..//SimpleCaseSecond" +
-                 "Matrix.txt", "..//..//..//SimpleCaseCorrectResult.txt"),
-             new TestCaseData(new MatrixMultiplierSingleThreading(), "..//..//.." +
-                 "//SimpleCaseFirstMatrix.txt", "..//..//..//SimpleCaseSecond" +
-                 "Matrix.txt", "..//..//..//SimpleCaseCorrectResult.txt"),
-             new TestCaseData(new MatrixMultiplierMultyThreading(), "..//..//.." +
-                 "//ComplexCaseFirstMatrix.txt", "..//..//..//ComplexCaseSecond" +
-                 "Matrix.txt", "..//..//..//ComplexCaseCorrectResult.txt"),
-             new TestCaseData(new MatrixMultiplierSingleThreading(), "..//..//.." +
-                 "//ComplexCaseFirstMatrix.txt", "..//..//..//ComplexCaseSecond" +
-                 "Matrix.txt", "..//..//..//ComplexCaseCorrectResult.txt")
+             new TestCaseData(new MatrixMultiplierMultyThreading(),
+                 "SimpleCaseFirstMatrix.txt", "SimpleCaseSecond" +
+                 "Matrix.txt", "SimpleCaseCorrectResult.txt"),
+             new TestCaseData(new MatrixMultiplierSingleThreading(), 
+                 "SimpleCaseFirstMatrix.txt", "SimpleCaseSecond" +
+                 "Matrix.txt", "SimpleCaseCorrectResult.txt"),
+             new TestCaseData(new MatrixMultiplierMultyThreading(),  
+                 "ComplexCaseFirstMatrix.txt", "ComplexCaseSecond" +
+                 "Matrix.txt", "ComplexCaseCorrectResult.txt"),
+             new TestCaseData(new MatrixMultiplierSingleThreading(), 
+                 "ComplexCaseFirstMatrix.txt", "ComplexCaseSecond" +
+                 "Matrix.txt", "ComplexCaseCorrectResult.txt")
          };
 
     private static IEnumerable<TestCaseData> MatrixMultipliers
@@ -40,9 +40,9 @@ public class Tests
     public void TestCaseNotExistingFileShouldThrowFileNotFoundException()
     {
         Assert.Throws<FileNotFoundException>(() =>
-        MatrixReader.ReadMatrixesFromFile("..//..//..//NotExistingFile.txt"));
+        MatrixReader.ReadMatrixesFromFile("NotExistingFile.txt"));
         Assert.Throws<FileNotFoundException>(() =>
-        MatrixWriter.WriteMatrixToFile("..//..//..//NotExistingFile.txt", new Matrix(2, 2)));
+        MatrixWriter.WriteMatrixToFile("NotExistingFile.txt", new Matrix(2, 2)));
     }
 
     [TestCaseSource(nameof(TestingMultiplicationData))]
