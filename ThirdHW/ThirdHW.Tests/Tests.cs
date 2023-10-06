@@ -22,7 +22,8 @@ public class Tests
             myThreadPool.AddTask(() =>
             {
                 manualResetEvent.WaitOne();
-            })
+                return 0;
+            });
         }
         Thread.Sleep(100);
         Assert.AreEqual(threadSize, myThreadPool.WorkingThreads);

@@ -1,4 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Threading;
+
 namespace ThirdHW;
 
 public class MyThreadPool
@@ -19,6 +22,12 @@ public class MyThreadPool
 
     private Object synchronizationObject;
 
+    private int workingThreads;
+
+    public int WorkingThreads { get; private set; }
+
+    public bool IsTerminated { get; private set; }
+
     public MyThreadPool(int numberOfThreads)
     {
         this.numberOfThreads = numberOfThreads;
@@ -31,6 +40,71 @@ public class MyThreadPool
         waitHandles[0] = isThereAnyTasksInQueue;
         waitHandles[1] = newTaskIsAwaiting;
         synchronizationObject = new Object();
+        IsTerminated = false;
+        WorkingThreads = workingThreads;
+        Start();
+    }
+
+    private void Start()
+    {
+        for (var i = 0; i < numberOfThreads; ++i)
+        {
+            threads[i] = new Thread(() =>
+            {
+                while (!cancellationTokenSource.IsCancellationRequested)
+                {
+                    WaitHandle.WaitAny(waitHandles);
+
+                    lock (tasks)
+                    {
+                        if (tasks.Count > 0)
+                        {
+                            isThereAnyTasksInQueue.Set();
+                        }
+                        else
+                        {
+                            isThereAnyTasksInQueue.Reset();
+                        }
+                    }
+
+                    if (tasks.Count > 0)
+                    {
+                        tasks.TryDequeue(out var action);
+                        Interlocked.Increment(ref workingThreads);
+                        action?.Invoke();
+                        Interlocked.Decrement(ref workingThreads);
+                    }
+
+                    lock (tasks)
+                    {
+                        if (tasks.Count > 0)
+                        {
+                            isThereAnyTasksInQueue.Set();
+                        }
+                        else
+                        {
+                            isThereAnyTasksInQueue.Reset();
+                        }
+                    }
+                }
+            }
+            );
+
+            threads[i].Start();
+        }
+    }
+
+    public void ShutDown()
+    {
+        if (!IsTerminated)
+        {
+            cancellationTokenSource.Cancel();
+            foreach (var thread in threads)
+            {
+                thread.Join();
+            }
+            IsTerminated = true;
+        }
     }
 
     public IMyTask<T1> AddTask<T1>(Func<T1> function, ManualResetEvent? manualResetEventIsUpperTaskCompleted = null)
@@ -51,75 +125,5 @@ public class MyThreadPool
             throw new InvalidOperationException();
         }
         
-    }
-
-    private class MyThread
-    {
-        private MyThreadPool myThreadPool;
-
-        private Thread thread;
-
-        private Action? action;
-
-        private bool isAvaible;
-
-        public bool IsAvaible { get; set; }
-
-        public MyThread(MyThreadPool myThreadPool, CancellationToken cancellationToken)
-        {
-            this.myThreadPool = myThreadPool;
-            this.thread = new Thread(() => Start(cancellationToken));
-            isAvaible = true;
-            IsAvaible = isAvaible;
-            thread.Start();
-        }
-
-        public void Start(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                WaitHandle.WaitAny(myThreadPool.waitHandles);
-                if (isAvaible && cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                lock (myThreadPool.tasks)
-                {
-                    if (myThreadPool.tasks.Count > 0)
-                    {
-                        myThreadPool.isThereAnyTasksInQueue.Set();
-                    } else
-                    {
-                        myThreadPool.isThereAnyTasksInQueue.Reset();
-                    }
-                }
-
-                if (myThreadPool.tasks.Count > 0)
-                {
-                    var isTaskAvailable = myThreadPool.tasks.
-                        TryDequeue(out action);
-                    if (isAvaible && action != null)
-                    {
-                        isAvaible = false;
-                        action();
-                        isAvaible = true;
-                        action = null;
-                    }
-                }
-
-                lock (myThreadPool.tasks)
-                {
-                    if (myThreadPool.tasks.Count > 0)
-                    {
-                        myThreadPool.isThereAnyTasksInQueue.Set();
-                    }
-                    else
-                    {
-                        myThreadPool.isThereAnyTasksInQueue.Reset();
-                    }
-                }
-            }
-        }
     }
 }
