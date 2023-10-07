@@ -24,7 +24,7 @@ public class MyThreadPool
 
     private int workingThreads;
 
-    public int WorkingThreads { get; private set; }
+    public int WorkingThreads { get => workingThreads; }
 
     public bool IsTerminated { get; private set; }
 
@@ -41,7 +41,6 @@ public class MyThreadPool
         waitHandles[1] = newTaskIsAwaiting;
         synchronizationObject = new Object();
         IsTerminated = false;
-        WorkingThreads = workingThreads;
         Start();
     }
 
@@ -69,10 +68,13 @@ public class MyThreadPool
 
                     if (tasks.Count > 0)
                     {
-                        tasks.TryDequeue(out var action);
-                        Interlocked.Increment(ref workingThreads);
-                        action?.Invoke();
-                        Interlocked.Decrement(ref workingThreads);
+                        var isavailable = tasks.TryDequeue(out var action);
+                        if (isavailable)
+                        {
+                            Interlocked.Increment(ref workingThreads);
+                            action?.Invoke();
+                            Interlocked.Decrement(ref workingThreads);
+                        }
                     }
 
                     lock (tasks)
@@ -118,6 +120,7 @@ public class MyThreadPool
                     cancellationTokenSource.Token,
                     manualResetEventIsUpperTaskCompleted);
                 tasks.Enqueue(() => newTask.Performe());
+                newTaskIsAwaiting.Set();
                 return newTask;
             }
         } else
