@@ -1,5 +1,4 @@
-﻿using System;
-namespace FirstHW;
+﻿namespace FirstHW;
 
 /// <summary>
 /// This class is created to write a matrix to file.
@@ -14,11 +13,11 @@ public static class MatrixWriter
         }
 
         using var writer = new StreamWriter(filePath);
-        string line = matrix.GetSize.m.ToString() + " " + matrix.GetSize.n.ToString() + "\n";
+        string line = matrix.GetSize.height.ToString() + " " + matrix.GetSize.width.ToString() + "\n";
         writer.Write(line);
-        for (var i = 0; i < matrix.GetSize.m; ++i)
+        for (var i = 0; i < matrix.GetSize.height; ++i)
         {
-            for (var j = 0; j < matrix.GetSize.n; ++j)
+            for (var j = 0; j < matrix.GetSize.width; ++j)
             {
                 writer.Write(matrix.GetElementByIndexes(i, j).ToString() + " ");
             }
@@ -26,4 +25,3 @@ public static class MatrixWriter
         }
     }
 }
-

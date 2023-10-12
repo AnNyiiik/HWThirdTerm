@@ -1,14 +1,13 @@
 ﻿namespace FirstHW;
 
 /// <summary>
-/// This class reads matrix form file (1st string - number of rows and columns,
+/// This class reads matrix from file (1st string - number of rows and columns,
 /// others - rows, each element separated by space).
 /// </summary>
 public static class MatrixReader
 {
     public static Matrix ReadMatrixesFromFile(string filePath)
     {
-
 
         using var reader = File.OpenText(filePath);
         
@@ -28,7 +27,7 @@ public static class MatrixReader
             return numbers;
         };
 
-        string? line = reader.ReadLine();
+        var line = reader.ReadLine();
 
         if (line == null || line.Length == 0)
         {
@@ -44,17 +43,17 @@ public static class MatrixReader
         }
         var matrix = new Matrix(matrixSize[0], matrixSize[1]);
             
-        int row = 0;
-        (int m, int n) = (matrix.GetSize.m, matrix.GetSize.n);
-        while ((line = reader.ReadLine()) != null && row < m)
+        var row = 0;
+        (int height, int width) = (matrix.GetSize.height, matrix.GetSize.width);
+        while ((line = reader.ReadLine()) != null && row < height)
         {
             int[] numbers = getNumbersFromString(line);
-            if (numbers.Length != n)
+            if (numbers.Length != width)
             {
                 throw new ArgumentException("incorrect format: matrix's "
                     + "size and matrix's data don't coincide");
             }
-            for (var i = 0; i < n; ++i)
+            for (var i = 0; i < width; ++i)
             {
                 matrix.SetElementByIndexes(row, i, numbers[i]);
             }

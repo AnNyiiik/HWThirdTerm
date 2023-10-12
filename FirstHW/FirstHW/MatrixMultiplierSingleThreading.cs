@@ -1,26 +1,26 @@
 ﻿namespace FirstHW;
 
 /// <summary>
-/// This class created to multiply matrixes using single-threading.
+/// This class is created to multiply matrixes using single-threading.
 /// </summary>
 public class MatrixMultiplierSingleThreading : IMatrixMultiplier
 {
 	public Matrix Multiply(Matrix a, Matrix b)
 	{
-        if (a.GetSize.n != b.GetSize.m)
+        if (a.GetSize.width != b.GetSize.height)
         {
             throw new ArgumentException("The incorrect matrixes' sizes for " +
                 "multiplication");
         }
         else
         {
-            var result = new Matrix(a.GetSize.m, b.GetSize.n);
-            for (var i = 0; i < a.GetSize.m; ++i)
+            var result = new Matrix(a.GetSize.height, b.GetSize.width);
+            for (var i = 0; i < a.GetSize.height; ++i)
             {
-                for (var j = 0; j < b.GetSize.n; ++j)
+                for (var j = 0; j < b.GetSize.width; ++j)
                 {
                     var sum = 0;
-                    for (var k = 0; k < a.GetSize.n; ++k)
+                    for (var k = 0; k < a.GetSize.width; ++k)
                     {
                         sum += a.GetElementByIndexes(i, k) *
                             b.GetElementByIndexes(k, j);

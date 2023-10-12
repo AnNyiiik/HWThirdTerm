@@ -9,13 +9,14 @@ public class Matrix
 
     private (int height, int width) Size;
 
-    public (int m, int n) GetSize { get => Size; } 
+    public (int height, int width) GetSize { get; } 
 
-    public Matrix(int m, int n)
+    public Matrix(int height, int width)
     {
-        MatrixItem = new int[m, n];
-        Size.height = m;
-        Size.width = n;
+        MatrixItem = new int[height, width];
+        Size.height = height;
+        Size.width = width;
+        GetSize = Size;
     }
 
     private static Random random = new Random();
@@ -23,23 +24,21 @@ public class Matrix
     /// <summary>
     /// Generates matrix
     /// </summary>
-    /// <param name="m">rows</param>
-    /// <param name="n">columns</param>
+    /// <param name="height">rows</param>
+    /// <param name="width">columns</param>
     /// <returns>matrix</returns>
-	public static Matrix GenerateMatrixWithRandomNumbers(int m, int n)
+	public static Matrix GenerateWithRandomNumbers(int height, int width)
     {
-        var matrix = new Matrix(m, n);
-        for (var i = 0; i < m; ++i)
+        var matrix = new Matrix(height, width);
+        for (var i = 0; i < height; ++i)
         {
-            for (var j = 0; j < n; ++j)
+            for (var j = 0; j < width; ++j)
             {
                 matrix.SetElementByIndexes(i, j, random.Next(-100, 100));
             }
         }
         return matrix;
     }
-
-
 
     public void SetElementByIndexes(int i, int j, int value)
     {
@@ -60,7 +59,7 @@ public class Matrix
         return MatrixItem[i, j];
     }
 
-    public void PrintMatrix()
+    public void Print()
     {
         for (var i = 0; i < Size.height; ++i)
         {

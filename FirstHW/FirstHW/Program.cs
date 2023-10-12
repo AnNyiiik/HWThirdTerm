@@ -10,8 +10,8 @@ var table = new ConsoleTable("Value",
 
 foreach (var size in sizesOfMatrixes)
 {
-    var a = Matrix.GenerateMatrixWithRandomNumbers(size, size);
-    var b = Matrix.GenerateMatrixWithRandomNumbers(size, size);
+    var a = Matrix.GenerateWithRandomNumbers(size, size);
+    var b = Matrix.GenerateWithRandomNumbers(size, size);
     var resultsMultyThreading = Experiments.
         SetExperiment(a, b, new MatrixMultiplierMultyThreading());
     var resultsSingleThreading = Experiments.
@@ -41,8 +41,8 @@ var matrixSize = 2;
 var difference = 0.0;
 while (Math.Abs(difference) < 100)
 {
-    var a = Matrix.GenerateMatrixWithRandomNumbers(matrixSize, matrixSize);
-    var b = Matrix.GenerateMatrixWithRandomNumbers(matrixSize, matrixSize);
+    var a = Matrix.GenerateWithRandomNumbers(matrixSize, matrixSize);
+    var b = Matrix.GenerateWithRandomNumbers(matrixSize, matrixSize);
     var resultsMultyThreading = Experiments.
         SetExperiment(a, b, new MatrixMultiplierMultyThreading());
     var resultsSingleThreading = Experiments.

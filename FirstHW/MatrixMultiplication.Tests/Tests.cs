@@ -55,24 +55,21 @@ public class Tests
         using (StreamReader reader = File.OpenText(pathToAnswer))
         {
             var line = reader.ReadLine()?.Split();
-            if (line != null)
+            Assert.NotNull(line);
+            Assert.True(Int32.Parse(line[0]) == result.GetSize.height &&
+            Int32.Parse(line[1]) == result.GetSize.width);
+            var n = result.GetSize.width;
+            var m = result.GetSize.height;
+            for (var i = 0; i < m; ++i)
             {
-                Assert.True(Int32.Parse(line[0]) == result.GetSize.m &&
-                Int32.Parse(line[1]) == result.GetSize.n);
-                var n = result.GetSize.n;
-                var m = result.GetSize.m;
-                for (var i = 0; i < m; ++i)
+                line = reader.ReadLine()?.Split();
+                for (var j = 0; j < n; ++j)
                 {
-                    line = reader.ReadLine()?.Split();
-                    for (var j = 0; j < n; ++j)
-                    {
-                        Assert.NotNull(line);
-                        Assert.That(Int32.Parse(line[j]), Is.EqualTo(result.
-                            GetElementByIndexes(i, j)));
-                    }
+                    Assert.NotNull(line);
+                    Assert.That(Int32.Parse(line[j]), Is.EqualTo(result.
+                        GetElementByIndexes(i, j)));
                 }
             }
-            else { Assert.NotNull(line); }
         }
     }
 }
