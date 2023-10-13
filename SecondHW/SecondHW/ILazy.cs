@@ -1,3 +1,3 @@
 ﻿namespace SecondHW;
 
-public interface ILazy<T> { T Get(); }
+public interface ILazy<T> { T? Get(); }

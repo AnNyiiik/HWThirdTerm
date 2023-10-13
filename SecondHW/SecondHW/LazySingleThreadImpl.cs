@@ -2,29 +2,29 @@
 
 public class LazySingleThreadImpl<T>: ILazy<T>
 {
-    private bool IsFirstSummon = true;
+    private bool isFirstSummon = true;
     private T? Result;
     private Exception? Exception;
-    private Func<T>? Supplier;
+    private Func<T?>? Supplier;
 
     public LazySingleThreadImpl(Func<T> function) => Supplier = function;
 
-	public T Get()
+	public T? Get()
 	{
-		if (IsFirstSummon)
+		if (isFirstSummon)
         {
-            IsFirstSummon = false;
+            isFirstSummon = false;
             try
             {
                 Result = Supplier!();
-            } catch (Exception)
+            } catch (Exception e)
             {
-                Exception = new Exception();
+                Exception = e;
             } finally
             {
                 Supplier = null;
             }
         }
-        return Exception == null ? Result : throw Exception;
+        return (Exception == null) ? Result : throw Exception;
     }
 }

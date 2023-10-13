@@ -16,7 +16,7 @@
 			Supplier = function;
 		}
 
-		public T Get()
+		public T? Get()
 		{
 			if (Volatile.Read(ref IsFirstSummon))
 			{

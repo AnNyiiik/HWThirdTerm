@@ -9,7 +9,6 @@ public class Tests
     private const int NumberOfThreads = 10;
     private static int NumberOfSingleThreadExperiments = 100;
     private ManualResetEvent? manualResetEvent;
-    //private Func<double> supplier = () => Math.Sqrt();
     private static int delimetr = 0;
 
     private static IEnumerable<TestCaseData> LazyImpl => new TestCaseData[]
@@ -21,9 +20,6 @@ public class Tests
     [TestCaseSource(nameof(LazyImpl))]
     public void InvalidSupplierShouldThrowException(ILazy<double> lazy)
     {
-        //negative = 0;
-        //var lazy2 = new LazyMultyThreadImpl<double>(() => Math.Sqrt(negative));
-        //Assert.Throws<Exception>(() => lazy2.Get());
         Assert.Throws<Exception>(() => lazy.Get());
     }
 
