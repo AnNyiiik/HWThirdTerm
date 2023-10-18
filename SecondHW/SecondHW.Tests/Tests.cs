@@ -8,17 +8,16 @@ public class Tests
     private const int NumberOfMultyThreadTests = 100;
     private const int NumberOfThreads = 10;
     private static int NumberOfSingleThreadExperiments = 100;
-    private ManualResetEvent? manualResetEvent;
-    private static int delimetr = 0;
+    static private ManualResetEvent? manualResetEvent;
 
     private static IEnumerable<TestCaseData> LazyImpl => new TestCaseData[]
     {
-        new TestCaseData(new LazyMultyThreadImpl<double>(() => 1 / delimetr)),
-        new TestCaseData(new LazySingleThreadImpl<double>(() => 1 / delimetr)),
+        new TestCaseData(new LazyMultyThreadImpl<int>(() => throw new Exception())),
+        new TestCaseData(new LazySingleThreadImpl<int>(() => throw new Exception()))
     };
 
     [TestCaseSource(nameof(LazyImpl))]
-    public void InvalidSupplierShouldThrowException(ILazy<double> lazy)
+    public void InvalidSupplierShouldThrowException(ILazy<int> lazy)
     {
         Assert.Throws<Exception>(() => lazy.Get());
     }
@@ -73,5 +72,6 @@ public class Tests
                 Assert.That(results[j], Is.EqualTo(localI * localI));
             }
         }
+        manualResetEvent.Reset();
     }
 }

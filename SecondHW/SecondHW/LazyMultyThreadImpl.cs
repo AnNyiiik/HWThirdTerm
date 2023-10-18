@@ -2,50 +2,50 @@
 {
 	public class LazyMultyThreadImpl<T>: ILazy<T>
 	{
-		private bool IsFirstSummon = true;
-		private bool ValueFlag = false;
-		private bool ExceptionFlag = false;
-		private T? Result;
-		private volatile Exception? Exception;
-		private Func<T>? Supplier;
-		private Object SynchronizationObject;
+		private bool isFirstSummon = true;
+		private volatile bool valueFlag = false;
+		private bool exceptionFlag = false;
+		private T? result;
+		private volatile Exception? exception;
+		private Func<T>? supplier;
+		private Object synchronizationObject;
 
 		public LazyMultyThreadImpl(Func<T> function)
 		{
-			SynchronizationObject = new Object();
-			Supplier = function;
+			synchronizationObject = new Object();
+			supplier = function;
 		}
 
 		public T? Get()
 		{
-			if (Volatile.Read(ref IsFirstSummon))
+			if (Volatile.Read(ref isFirstSummon))
 			{
-				lock(SynchronizationObject)
+				lock(synchronizationObject)
 				{
-					if (Volatile.Read(ref IsFirstSummon))
+					if (Volatile.Read(ref isFirstSummon))
 					{
 						try
 						{
-                            Result = Supplier!();
-							ValueFlag = true;
-						} catch (Exception)
+                            result = supplier!();
+							valueFlag = true;
+						} catch (Exception e)
 						{
-							Exception = new Exception();
-                            ExceptionFlag = true;
+							exception = e;
+                            exceptionFlag = true;
                         } finally
 						{
-							Supplier = null;
-                            Volatile.Write(ref IsFirstSummon, false);
+							supplier = null;
+                            Volatile.Write(ref isFirstSummon, false);
                         }
                     } 
                 }
 			}
 
-            if (!Volatile.Read(ref ExceptionFlag) && ValueFlag)
+            if (!Volatile.Read(ref exceptionFlag) && valueFlag)
 			{
-				return Result;
-			} else if (ExceptionFlag) {
-				throw Exception;
+				return result;
+			} else if (exceptionFlag && exception != null) {
+				throw exception;
 			} else
 			{
 				throw new Exception();
