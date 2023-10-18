@@ -23,6 +23,12 @@ public class Tests
     }
 
     [Test]
+    public void FunctionShouldBeCalledOnce()
+    {
+
+    }
+
+    [Test]
     public void SingleThreadTest()
     {
         for (var i = 0; i < NumberOfSingleThreadExperiments; ++i)
