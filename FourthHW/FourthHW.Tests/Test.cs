@@ -31,7 +31,7 @@ public class Tests
     public void ServerTestList()
     {
         var result = server.List(pathToTestDirectory);
-        Assert.That(result.Item1 == correctSizeList);
+        Assert.AreEqual(result.Item1, correctSizeList);
         Assert.NotNull(result.Item2);
         //foreach(var element in correctAnswerList)
         //if (result.Item2 != null)
@@ -44,7 +44,7 @@ public class Tests
     public void ClientTestList()
     {
         var result = client.List(server, 0, pathToTestDirectory);
-        Assert.That(result.Item1 == correctSizeList);
+        Assert.AreEqual(result.Item1, correctSizeList);
         Assert.NotNull(result.Item2);
         //foreach (var element in correctAnswerList)
         //if (result.Item2 != null)
