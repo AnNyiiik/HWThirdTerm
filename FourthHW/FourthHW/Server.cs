@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Net;
-namespace FourthHW;
+﻿namespace FourthHW;
 
 public class Server
 {
@@ -50,11 +48,6 @@ public class Server
 
     public (int, List<(string, bool)>?) List(string path)
 	{
-		if (path[0] == '.')
-		{
-			path = path[1..];
-		}
-
 		if (!isDirectory(path))
 		{
 			return (-1, null);
@@ -76,27 +69,25 @@ public class Server
             GetDirectoryRoot(rootDirectoryName)[1..]
             + rootDirectoryName + path);
 
-		var size = directories.Length + files.Length;
-
 		var list = new List<(string, bool)>();
 		for (var i = 0; i < directories.Length; ++i)
 		{
-			list.Append<(string, bool)>((directories[i], true));
+			list.Add((directories[i], true));
 		}
         for (var i = 0; i < files.Length; ++i)
         {
-            list.Append<(string, bool)>((files[i], false));
+            if (files[i].Contains('~'))
+            {
+                continue;
+            }
+            list.Add((files[i], false));
         }
+        var size = list.Count;
 		return (size, list);
     }
 
     public (long, byte[]?) Get(string path)
     {
-        if (path[0] == '.')
-        {
-            path = path[1..];
-        }
-
         if (isDirectory(path))
         {
             return (-1, null);

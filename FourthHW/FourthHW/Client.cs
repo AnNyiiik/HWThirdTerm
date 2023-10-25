@@ -24,6 +24,11 @@ public class Client
 
     public (int size, List<(string, bool)>?) List(Server server, int port, string path)
     {
+        if (currentServer == null)
+        {
+            currentServer = server;
+            this.port = port;
+        }
         if (server != currentServer && port != this.port)
         {
             LeaveServer();
@@ -41,6 +46,11 @@ public class Client
 
     public (long size, byte[]? bytes) Get(Server server, int port, string path)
     {
+        if (currentServer == null)
+        {
+            currentServer = server;
+            this.port = port;
+        }
         if (server != currentServer && port != this.port)
         {
             LeaveServer();
