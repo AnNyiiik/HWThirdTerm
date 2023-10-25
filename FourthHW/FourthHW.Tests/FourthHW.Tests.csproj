@@ -30,7 +30,4 @@
   <ItemGroup>
     <ProjectReference Include="..\FourthHW\FourthHW.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\.editorconfig" />
-  </ItemGroup>
 </Project>
