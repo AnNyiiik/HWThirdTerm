@@ -10,10 +10,10 @@ public class Tests
         var output = File.OpenWrite("result.txt");
         var serverReader = new StreamReader(serverText);
         var serverWriter = new StreamWriter(output);
-        Task.Run(() => ChatServer.RunServer(8082, serverReader, serverWriter));
-        var clientReader = new StreamReader(serverText);
+        Task.Run(() => ChatNetwork.RunServer(8082, serverReader, serverWriter));
+        var clientReader = new StreamReader(clientText);
         var clientWriter = new StreamWriter(output);
-        var result = ChatClient.RunClient(8082, "localhost", clientReader, clientWriter);
+        var result = ChatNetwork.RunClient(8082, "localhost", clientReader, clientWriter);
         result.Wait();
     }
 }
