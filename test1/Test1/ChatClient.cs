@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net;
-using System.Net.Http;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 
 namespace Test1;
 public static class ChatClient
@@ -14,27 +11,29 @@ public static class ChatClient
             using var serverWriter = new StreamWriter(stream);
             using var serverReader = new StreamReader(stream);
 
+            string? response;
             while (true)
             {
-                var message = reader.ReadLine();
-                await serverWriter.WriteLineAsync(message);
+                response = reader.ReadLine();
+
+                await serverWriter.WriteLineAsync(response);
                 await serverWriter.FlushAsync();
 
-                if (message == "exit")
+                if (response == "exit")
                 {
                     break;
                 }
 
-                await writer.WriteLineAsync($"Sent: {message}");
-                var data = await serverReader.ReadLineAsync();
-                await writer.WriteLineAsync($"Received: {data}");
-                if (data == "exit")
+                await writer.WriteLineAsync($"Sent to server: {response}");
+                var recieved = await serverReader.ReadLineAsync();
+                await writer.WriteLineAsync($"Received from server: {recieved}");
+
+                if (recieved == "exit")
                 {
                     break;
                 }
             }
         }
-
     }
 }
 
