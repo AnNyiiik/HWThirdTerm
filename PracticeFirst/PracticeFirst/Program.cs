@@ -2,13 +2,13 @@
 using PracticeFirst;
 // See https://aka.ms/new-console-template for more information
 var threads = new Thread[5];
-var availableForks = new int[10];
+var availableForks = new Object[5];
 var synchronizationObject = new Object();
 var philosophers = new Philosopher[5];
 
-for (var i = 0; i < 10; ++i)
+for (var i = 0; i < 5; ++i)
 {
-    availableForks[i] = 1;
+    availableForks[i] = new Object();
 }
 
 for (var i = 0; i < 5; ++i)
@@ -21,30 +21,19 @@ for (var i = 0; i < 5; ++i)
     var localI = i;
     threads[localI] = new Thread(() =>
     {
-        lock (synchronizationObject)
+        while (philosophers[localI].NumberOfEating < 5)
         {
-            if (Volatile.Read(ref availableForks[localI * 2]) == 1 &&
-            availableForks[localI * 2 + 1] == 1 && philosophers[localI].DoneThinking)
+            philosophers[localI].Think();
+            lock (availableForks[localI])
             {
-                philosophers[localI].Left();
-                Volatile.Write(ref availableForks[localI * 2], 0);
-                philosophers[localI].Right();
-                Volatile.Write(ref availableForks[localI * 2 + 1], 0);
-                philosophers[localI].Eat();
+                lock (availableForks[(localI + 1) % 5])
+                {
+                    philosophers[localI].Eat();
+                }
             }
-            else if (philosophers[localI].DoneEating)
-            {
-                philosophers[localI].Left();
-                Volatile.Write(ref availableForks[localI * 2], 1);
-                philosophers[localI].Right();
-                Volatile.Write(ref availableForks[localI * 2 + 1], 1);
-                philosophers[localI].Think();
-            };
         }
     });
 }
-
-Console.WriteLine("Hello world");
 
 for (var i = 0; i < 5; ++i)
 {
@@ -55,3 +44,5 @@ for (var i = 0; i < 5; ++i)
 {
     threads[i].Join();
 }
+
+Console.WriteLine("Hello world");
