@@ -1,10 +1,13 @@
 ﻿using System.Diagnostics;
-using MD5;
 
 var stopWatch = new Stopwatch();
 
-Console.WriteLine("Enter path to directory");
+Console.WriteLine("Enter path to directory/file");
 string? path = Console.ReadLine();
+if (!Directory.Exists(path) && !File.Exists(path))
+{
+    Console.Write("directory not found");
+}
 try
 {
     stopWatch.Start();
