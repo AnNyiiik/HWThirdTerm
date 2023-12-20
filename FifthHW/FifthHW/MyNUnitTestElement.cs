@@ -1,43 +1,31 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace FifthHW
 {
 	public class MyNUnitTestElement
 	{
-		public enum Types
-		{
-			Before,
-			After,
-			BeforeClass,
-			AfterClass
-		}
-
-		public MyNUnitTestElement(Types type, MethodInfo method,
-			object? obj = null)
+		
+		public MyNUnitTestElement(Type type, MethodInfo method)
 		{
 			this.type = type;
 			this.method = method;
-			this.obj = obj;
 		}
 
-        public Types type { get; private set; }
+        public Type type { get; private set; }
 
 		public MethodInfo method { get; private set; }
 
-		private readonly object? obj;
-
-		public void RunMethod()
+		public void RunMethod(object? classObject)
 		{
 			try
 			{
-				if (this.type == Types.BeforeClass || this.type ==
-					Types.BeforeClass)
+				if (type == typeof(BeforeClassAttribute) || type ==
+					typeof(BeforeAttribute))
 				{
                     method.Invoke(null, new object[] { });
 					return;
                 }
-                method.Invoke(obj, new object[] { });
+                method.Invoke(classObject, new object[] { });
             } catch 
 			{
 				return;

@@ -8,7 +8,7 @@ public class MyNUnitTest
 	private readonly string whyIsIgnored;
 	private readonly Type? typeOfExpectedException;
 	private readonly MethodInfo methodInfo;
-	private readonly Object obj;
+	public readonly Object classObject;
 
 	public MyNUnitTest(MethodInfo methodInfo, Object obj)
 	{
@@ -19,7 +19,7 @@ public class MyNUnitTest
 			ReasonForIgnore! : string.Empty;
         typeOfExpectedException = ((MyTestAttribute)attribute!)
 			.TypeOfExpectedException;
-        this.obj = obj;
+        this.classObject = obj;
     }
 
 	public enum TestStatuses
@@ -27,20 +27,6 @@ public class MyNUnitTest
 		failed,
 		passed,
 		ignored
-	}
-
-	public class TestOutput
-	{
-		public TestOutput(TestStatuses status, string? message, string? name)
-		{
-			Status = status;
-			Message = message;
-			Name = name;
-		}
-
-		public TestStatuses Status { get; private set; }
-		public string? Message { get; private set; }
-		public string? Name { get; private set; }
 	}
 
 	public TestOutput PerformeTest()
@@ -53,7 +39,7 @@ public class MyNUnitTest
 
         try
         {
-            methodInfo.Invoke(obj, new object[] { });
+            methodInfo.Invoke(classObject, new object[] { });
             return new TestOutput(TestStatuses.passed, String.Empty,
 				methodInfo.Name);
         }

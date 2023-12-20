@@ -1,22 +1,16 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace FifthHW;
 
 public class MyNUnitTestLauncher
 {
-	public class TestClassOutput
-	{
-		public TestClassOutput()
-		{
 
-		}
-	}
-
-	public static List<TestClassOutput> RunAllTests(string path)
+    private static ConcurrentBag<TestClassOutput> testClassOutputs =
+        new ConcurrentBag<TestClassOutput>();
+	
+    public static List<TestClassOutput> RunAllTests(string path)
 	{
-        var testClassesOutputs = new ConcurrentQueue<TestClassOutput>();
         var assemblies = Directory.EnumerateFiles(path, "*.dll");
         Parallel.ForEach(assemblies,
             (assembly) =>
@@ -29,85 +23,175 @@ public class MyNUnitTestLauncher
                     var methods = classItem.GetTypeInfo().DeclaredMethods;
 
                     var beforeClass = ExtractTestAndIncorrectTestElements(methods,
-                        MyNUnitTestElement.Types.BeforeClass);
+                        typeof(BeforeClassAttribute));
                     var before = ExtractTestAndIncorrectTestElements(methods,
-                        MyNUnitTestElement.Types.Before);
+                        typeof(BeforeAttribute));
                     var after = ExtractTestAndIncorrectTestElements(methods,
-                        MyNUnitTestElement.Types.After);
-                    var AfterClass = ExtractTestAndIncorrectTestElements(methods,
-                        MyNUnitTestElement.Types.AfterClass);
+                        typeof(AfterAttribute));
+                    var afterClass = ExtractTestAndIncorrectTestElements(methods,
+                        typeof(AfterClassAttribute));
+                    var tests = ExtractTestsAndIncorrectTestNames(methods,
+                        constructorInfo);
 
                     foreach (var methodBeforeClass in beforeClass.Item1)
                     {
-                        methodBeforeClass.RunMethod();
+                        methodBeforeClass.RunMethod(null);
                     }
 
+                    var testResults = new ConcurrentBag<TestOutput>();
+                    Parallel.ForEach(tests.Item1, (test) =>
+                    {
+                        foreach(var beforeMethod in before.Item1)
+                        {
+                            beforeMethod.RunMethod(test.classObject);
+                        }
+                        testResults.Add(test.PerformeTest());
+                        foreach(var afterMethod in after.Item1)
+                        {
+                            afterMethod.RunMethod(test.classObject);
+                        }
+                        foreach(var afterClassMethod in afterClass.Item1)
+                        {
+                            afterClassMethod.RunMethod(null);
+                        }
+                    });
 
+                    var incorrectTestElementsNames = new List<string>();
+                    incorrectTestElementsNames.AddRange(beforeClass.Item2);
+                    incorrectTestElementsNames.AddRange(before.Item2);
+                    incorrectTestElementsNames.AddRange(after.Item2);
+                    incorrectTestElementsNames.AddRange(afterClass.Item2);
+                    var testClassOutput = new TestClassOutput(classItem.Name,
+                        incorrectTestElementsNames, tests.Item2,
+                        testResults.ToList());
+                    testClassOutputs.Add(testClassOutput);
                 });
         });
 
-        return testClassesOutputs.ToList();
+        return testClassOutputs.ToList();
     }
 
-    private static List<IEnumerable<MethodInfo>?>
-        ExtractMethodsWithAppropriateAttributes(IEnumerable<MethodInfo>?
-        methods)
+    private static List<MethodInfo>GetElementsWithAttribute(IEnumerable<MethodInfo> methods,
+        Type type)
     {
-        var types = new Type[] {typeof(BeforeClassAttribute),
-            typeof(BeforeAttribute), typeof(MyTestAttribute),
-            typeof(AfterAttribute), typeof(AfterClassAttribute)};
-        var suitableMethods = new List<IEnumerable<MethodInfo>?>();
-
-        for (var i = 0; i < types.Length; ++i) 
+        var methodsWithAppropriateType = new List<MethodInfo>();
+        foreach (var method in methods)
         {
-            suitableMethods[i] = from method in methods
-                              where method.IsDefined(types[i])
-                              select method;
+            if (method.IsDefined(type))
+            {
+                methodsWithAppropriateType.Add(method);
+            }
         }
+        return methodsWithAppropriateType;
+    }
 
-        return suitableMethods;
+    private static (List<MyNUnitTest>, List<string>)
+        ExtractTestsAndIncorrectTestNames(IEnumerable<MethodInfo> methods,
+        ConstructorInfo? constructorInfo)
+    {
+        var testsMethods = GetElementsWithAttribute(methods, typeof(MyTestAttribute));
+        var tests = new List<MyNUnitTest>();
+        var incorrectTestNames = new List<string>();
+
+        foreach(var method in testsMethods)
+        {
+            if (method.GetParameters().Length > 0 || method.ReturnType
+                != typeof(void))
+            {
+                incorrectTestNames.Add(method.Name);
+            } else
+            {
+                var test = new MyNUnitTest(method, constructorInfo!
+                    .Invoke(new object[] {}));
+                tests.Add(test);
+            }
+        }
+        return (tests, incorrectTestNames);
     }
 
     private static (List<MyNUnitTestElement>, List<string>) ExtractTestAndIncorrectTestElements(
-        IEnumerable<MethodInfo> methods, MyNUnitTestElement.Types type)
+        IEnumerable<MethodInfo> methods, Type type)
     {
-        var testSuitElements = new List<MyNUnitTestElement>();
-        var incorrectElements = new List<string>();
-        var beforeAndAfterCondition = (MethodInfo methodInfo)
-            => methodInfo.GetParameters().Length == 0
-            && methodInfo.ReturnType == typeof(void);
-        var beforeClassAndAfterClassCondition = (MethodInfo methodInfo)
-            => methodInfo.GetParameters().Length == 0
-            && methodInfo.ReturnType == typeof(void)
-            && methodInfo.IsStatic;
+        var testElements = new List<MyNUnitTestElement>();
+        var incorrectTestElementsNames = new List<string>();
 
-        foreach(var method in methods)
+        var methodsWithAppropriateType = GetElementsWithAttribute(methods, type);
+
+        foreach(var method in methodsWithAppropriateType)
         {
+
             if (method.GetParameters().Length == 0
             && method.ReturnType == typeof(void))
             {
-                if (type == MyNUnitTestElement.Types.After ||
-                type == MyNUnitTestElement.Types.Before)
+                if (type == typeof(AfterClassAttribute) ||
+                type == typeof(BeforeClassAttribute))
                 {
-                    testSuitElements.Add(new MyNUnitTestElement(type, method));
+                    testElements.Add(new MyNUnitTestElement(type, method));
                 }
                 else 
                 {
-                    if (method.IsStatic)
+                    if (method.IsStatic && (type == typeof(AfterAttribute) ||
+                        type == typeof(BeforeAttribute)))
                     {
-                        testSuitElements.Add(new MyNUnitTestElement(type, method));
+                        testElements.Add(new MyNUnitTestElement(type, method));
                     } else
                     {
-                        incorrectElements.Add(method.Name);
+                        incorrectTestElementsNames.Add(method.Name);
                     }
                 }
             }
             else
             {
-                incorrectElements.Add(method.Name);
+                incorrectTestElementsNames.Add(method.Name);
             }
         }
-        return (testSuitElements, incorrectElements);
+        return (testElements, incorrectTestElementsNames);
+    }
+
+    private static int CountTetsByStatus(List<TestOutput> testClassOutput,
+        MyNUnitTest.TestStatuses status)
+    {
+        var count = 0;
+        foreach(var testOutput in testClassOutput)
+        {
+            if (testOutput.Status == status)
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    public static void WriteTestExecutionResults(TextWriter writer,
+        List<TestClassOutput> testClassesOutputs)
+    {
+        foreach (var testClassOutput in testClassesOutputs)
+        {
+            writer.WriteLine($"Class: {testClassOutput.ClassName}");
+            writer.WriteLine($"Passed: {CountTetsByStatus(testClassOutput
+                .TestResults, MyNUnitTest.TestStatuses.passed)}");
+            writer.WriteLine($"Failed: {CountTetsByStatus(testClassOutput
+                .TestResults, MyNUnitTest.TestStatuses.failed)}");
+            writer.WriteLine($"Ignored: {CountTetsByStatus(testClassOutput
+                .TestResults, MyNUnitTest.TestStatuses.ignored)}");
+            writer.WriteLine("Test results:");
+            foreach (var testOutput in testClassOutput.TestResults)
+            {
+                writer.WriteLine($"Test {testOutput.Name} executed with status " +
+                    $"{testOutput.Name}. Message: {testOutput.Message}");
+            }
+            writer.WriteLine("Incorrect test methods, verify the number of " +
+                "parameters and return value:");
+            foreach(var name in testClassOutput.IncorrectTestNames)
+            {
+                writer.WriteLine(name);
+            }
+            writer.WriteLine("Incorrect before and after methods, verify the number of " +
+                "parameters and return value:");
+            foreach (var name in testClassOutput.IncorrectTestElementsNames)
+            {
+                writer.WriteLine(name);
+            }
+        }
     }
 }
-
