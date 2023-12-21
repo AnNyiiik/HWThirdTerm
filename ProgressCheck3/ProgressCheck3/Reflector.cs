@@ -1,196 +1,170 @@
 ﻿using System.Reflection;
 using System.Text;
+
+namespace ProgressCheck3;
+
 public class Reflector
 {
-    /// <summary>
-    /// Creates a file named <class name>.cs with class code.
-    /// </summary>
-    /// <param name="someClass">type of which class file should be extracted</param>
-    /// <param name="dirToWrite">directory path to write extracted file</param>
-    public void PrintStructure(Type someClass, string dirToWrite)
+    
+    public void PrintStructure(Type someClass, string? dirToWrite = null)
     {
-        string className = someClass.Name;
-        string fileName = className + ".cs";
-
-        using (StreamWriter writer = new StreamWriter(dirToWrite + fileName))
+        var className = someClass.Name;
+        var fileName = className + ".cs";
+        using (var writer = new StreamWriter(dirToWrite + fileName))
         {
-            var stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine($"namespace {someClass.Namespace}");
-            stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine($"    {GetVisibility(someClass)} " +
-                $"class {className}{GetGenericParameters(someClass)}");
-            stringBuilder.AppendLine("    {");
-
-            var fields = someClass.GetFields();
-            foreach(var field in fields)
-            {
-                stringBuilder.AppendLine($"        {GetVisibility(field)} " +
-                    $"{GetFieldType(field)} {field.Name};");
-            }
-            var methods = someClass.GetMethods();
-            foreach(var method in methods)
-            {
-                stringBuilder.AppendLine($"        {GetVisibility(method)} " +
-                    $"{GetReturnType(method)} {method.Name}" +
-                    $"{GetGenericParameters(method)}" +
-                    $"({GetMethodParameters(method)});");
-            }
-            var nestedClasses = someClass.GetNestedTypes();
-            foreach(var nestedClass in nestedClasses)
-            {
-                stringBuilder.AppendLine($"        {GetVisibility(nestedClass)} " +
-                    $"class {nestedClass.Name}" +
-                    $"{GetGenericParameters(nestedClass)}");
-                stringBuilder.AppendLine("        {");
-                stringBuilder.AppendLine("        }");
-            }
-
-            var interfaces = someClass.GetInterfaces();
-
-            foreach(var interfaceItem in interfaces)
-            {
-                stringBuilder.AppendLine($"        {GetVisibility(interfaceItem)} " +
-                    $"interface {interfaceItem.Name}" +
-                    $"{GetGenericParameters(interfaceItem)}");
-                stringBuilder.AppendLine("        {");
-                stringBuilder.AppendLine("        }");
-            }
-            stringBuilder.AppendLine("    }");
-            stringBuilder.AppendLine("}");
-
-            writer.Write(stringBuilder.ToString());
+            PrintClass(writer, someClass);
         }
     }
 
-    /// <summary>
-    /// Print dirrent fields and methods of a given types.
-    /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
+    private void PrintClass(StreamWriter writer, Type someClass)
+    {
+
+        writer.WriteLine($"public class {someClass.Name}");
+        writer.WriteLine("{");
+        PrintFields(writer, someClass);
+        PrintMethods(writer, someClass);
+
+        var nestedClasses = someClass.GetNestedTypes(BindingFlags.Public
+        | BindingFlags.NonPublic);
+        foreach (var nestedClass in nestedClasses)
+        {
+            PrintClass(writer, nestedClass);
+        }
+
+        PrintInterfaces(writer, someClass);
+        writer.WriteLine("}");
+    }
+
+    private void PrintFields(StreamWriter writer, Type someClass)
+    {
+        var fields = someClass.GetFields(BindingFlags.Public | BindingFlags.
+            NonPublic | BindingFlags.Instance | BindingFlags.Static);
+
+        foreach (var field in fields)
+        {
+            var modifiers = GetModifiers(field);
+            var fieldType = GetFieldType(field.FieldType);
+            var fieldName = field.Name;
+            writer.WriteLine($"{modifiers} {fieldType} {fieldName};");
+        }
+        writer.WriteLine();
+    }
+
+    private void PrintMethods(StreamWriter writer, Type someClass)
+    {
+        var methods = someClass.GetMethods(BindingFlags.Public |
+            BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+        foreach(var method in methods)
+        {
+            var modifiers = GetModifiers(method);
+            var returnType = GetFieldType(method.ReturnType);
+            var methodName = method.Name;
+            var parameters = string.Join(", ", method.GetParameters().
+                Select(p => $"{GetFieldType(p.ParameterType)} {p.Name}"));
+            writer.WriteLine($"{modifiers} {returnType} {methodName}({parameters});");
+        }
+        writer.WriteLine();
+    }
+
+    private void PrintInterfaces(StreamWriter writer, Type someClass)
+    {
+        var interfaces = someClass.GetInterfaces();
+        foreach(var interfaceItem in interfaces)
+        {
+            writer.WriteLine($"public interface {interfaceItem.Name}");
+            writer.WriteLine("{");
+            PrintMethods(writer, interfaceItem);
+            writer.WriteLine("}");
+        }
+        writer.WriteLine();
+    }
+
+    private string GetModifiers(MemberInfo member)
+    {
+        var modifiers = "";
+        if (member is FieldInfo)
+        {
+            var item = member as FieldInfo;
+            if (item.IsPublic)
+                modifiers += "public ";
+            if (item.IsPrivate)
+                modifiers += "private ";
+            if (item.IsFamily)
+            modifiers += "protected ";
+            if (item.IsStatic)
+                modifiers += "static ";
+        }  else
+        {
+            var item = member as MethodInfo;
+            if (item.IsPublic)
+                modifiers += "public ";
+            if (item.IsPrivate)
+                modifiers += "private ";
+            if (item.IsFamily)
+                modifiers += "protected ";
+            if (item.IsStatic)
+                modifiers += "static ";
+        }
+        return modifiers.Trim();
+    }
+
+    private string GetFieldType(Type fieldType)
+    {
+        var typeName = fieldType.Name;
+        if (fieldType.IsGenericType)
+        {
+            typeName = typeName.Substring(0, typeName.IndexOf("`"));
+            typeName += "<";
+            typeName += string.Join(", ", fieldType.GetGenericArguments()
+                .Select(arg => GetFieldType(arg)));
+            typeName += ">";
+        }
+        return typeName;
+    }
+
+    public int CountDifferences(Type a, Type b)
+    {
+        return (Compare(a, b, typeof(FieldInfo)).Length +
+            Compare(a, b, typeof(MethodInfo)).Length);
+    }
+
     public string DiffClasses(Type a, Type b)
     {
         var result = new StringBuilder();
         result.AppendLine("Fields:");
-        result.Append(GetTypesDifferences(a.GetFields(), b.GetFields()));
+        result.AppendLine(Compare(a, b, typeof(FieldInfo)));
+        result.AppendLine();
         result.AppendLine("Methods:");
-        result.Append(GetTypesDifferences(a.GetMethods(), b.GetMethods()));
+        result.AppendLine(Compare(a, b, typeof(MethodInfo)));
         return result.ToString();
     }
 
-    private string GetTypesDifferences(MemberInfo[] a, MemberInfo[] b)
+    private string FindDifference(MemberInfo[] itemFirst, MemberInfo[] itemSecond)
     {
-        var result = new StringBuilder();
-        var differences = a.Except(b).Union(b.Except(a));
-        foreach (var difference in differences)
+        var differenceResult = new StringBuilder();
+        var difference = itemFirst.Except(itemSecond).Union(itemSecond
+            .Except(itemFirst));
+        foreach (var diff in difference)
         {
-            result.AppendLine(difference.Name);
+            differenceResult.AppendLine(diff.Name);
         }
-        return result.ToString();
+        return differenceResult.ToString();
     }
 
-    private string GetVisibility(MemberInfo member)
+    private string Compare(Type a, Type b, Type typeToCompare)
     {
-        if (member is Type type)
+        var bindFlags = BindingFlags.Public
+            | BindingFlags.NonPublic | BindingFlags.Instance
+            | BindingFlags.Static;
+        if (typeToCompare == typeof(FieldInfo))
         {
-            if (type.IsNested)
-            {
-                return GetVisibilityOfTypeAttributes(type.Attributes);
-            }
-            else
-            {
-                return GetVisibilityOfTypeAttributes(type.Attributes) + (type.IsInterface ? " interface" : " class");
-            }
-        }
-        else if (member is FieldInfo field)
+            return FindDifference(a.GetFields(bindFlags), b.GetFields(bindFlags));
+        } else if (typeToCompare == typeof(PropertyInfo))
         {
-            return GetVisibilityOfFieldAttributes(field.Attributes);
+            return FindDifference(a.GetProperties(bindFlags),
+                b.GetProperties(bindFlags));
+            
         }
-        else if (member is MethodInfo)
-        {
-            //var method = member as MethodInfo;
-            //var attr = method?.Attributes;
-            //return  (method.IsStatic ? " static" : "") + (method.IsAbstract ? " abstract" : "");
-        }
-        return "";
-    }
-
-    private string GetVisibilityOfTypeAttributes(TypeAttributes attributes)
-    {
-        switch (attributes & TypeAttributes.VisibilityMask)
-        {
-            case TypeAttributes.Public:
-                return "public";
-            case TypeAttributes.NestedPublic:
-                return "public";
-            case TypeAttributes.NestedPrivate:
-                return "private";
-            case TypeAttributes.NestedFamily:
-                return "protected";
-            case TypeAttributes.NestedAssembly:
-                return "internal";
-            case TypeAttributes.NestedFamORAssem:
-                return "protected internal";
-            default:
-                return "";
-        }
-    }
-    private string GetVisibilityOfFieldAttributes(FieldAttributes attributes)
-    {
-        switch (attributes & FieldAttributes.FieldAccessMask)
-        {
-            case FieldAttributes.Public:
-                return "public";
-            case FieldAttributes.Private:
-                return "private";
-            case FieldAttributes.Family:
-                return "protected";
-            case FieldAttributes.Assembly:
-                return "internal";
-            case FieldAttributes.FamORAssem:
-                return "protected internal";
-            default:
-                return "";
-        }
-    }
-
-    private string GetFieldType(FieldInfo field)
-    {
-        return field.FieldType.Name;
-    }
-
-    private string GetReturnType(MethodInfo method)
-    {
-        return method.ReturnType.Name;
-    }
-
-    private string GetGenericParameters(Type type)
-    {
-        if (type.GetGenericArguments().Length > 0)
-        {
-            var genericArgs = type.GetGenericArguments().Select(a => a.Name).ToArray();
-            return $"<{string.Join(", ", genericArgs)}>";
-        }
-        return "";
-    }
-    private string GetGenericParameters(MethodInfo method)
-    {
-        if (method.GetGenericArguments().Length > 0)
-        {
-            var genericArgs = method.GetGenericArguments().Select(a => a.Name).ToArray();
-            return $"<{string.Join(", ", genericArgs)}>";
-        }
-        return "";
-    }
-    private string GetMethodParameters(MethodInfo method)
-    {
-        var parameters = method.GetParameters();
-        string[] parameterDeclarations = new string[parameters.Length];
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var parameter = parameters[i];
-            parameterDeclarations[i] = $"{parameter.ParameterType.Name} " +
-                $"{parameter.Name}";
-        }
-        return string.Join(", ", parameterDeclarations);
+        return FindDifference(a.GetMethods(bindFlags), b.GetMethods(bindFlags));
     }
 }
