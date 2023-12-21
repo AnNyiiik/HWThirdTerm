@@ -107,9 +107,9 @@ public class Reflector
         }
         else if (member is MethodInfo)
         {
-            var method = member as MethodInfo;
-            var attr = method?.Attributes;
-            return  (method.IsStatic ? " static" : "") + (method.IsAbstract ? " abstract" : "");
+            //var method = member as MethodInfo;
+            //var attr = method?.Attributes;
+            //return  (method.IsStatic ? " static" : "") + (method.IsAbstract ? " abstract" : "");
         }
         return "";
     }
