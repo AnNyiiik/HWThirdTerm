@@ -7,7 +7,8 @@ public class MyTestAttribute : Attribute
     private readonly string? reasonForIgnore;
     private readonly Type? typeOfExpectedException;
 
-    public MyTestAttribute(string? reasonForIgnore, Type? typeOfExpectedException)
+    public MyTestAttribute(string? reasonForIgnore = null,
+        Type? typeOfExpectedException = null)
     {
         this.reasonForIgnore = reasonForIgnore;
         this.typeOfExpectedException = typeOfExpectedException;
