@@ -5,7 +5,7 @@
 /// </summary>
 public class MatrixMultiplierSingleThreading : IMatrixMultiplier
 {
-	public Matrix Multiply(Matrix a, Matrix b)
+    public Matrix Multiply(Matrix a, Matrix b)
 	{
         if (a.GetSize.width != b.GetSize.height)
         {
