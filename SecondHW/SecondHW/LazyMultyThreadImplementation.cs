@@ -1,6 +1,6 @@
 ﻿namespace SecondHW
 {
-	public class LazyMultyThreadImpl<T>: ILazy<T>
+	public class LazyMultyThreadImplementation<T>: ILazy<T>
 	{
 		private bool isFirstSummon = true;
 		private volatile bool valueFlag = false;
@@ -10,7 +10,7 @@
 		private Func<T>? supplier;
 		private Object synchronizationObject;
 
-		public LazyMultyThreadImpl(Func<T> function)
+		public LazyMultyThreadImplementation(Func<T> function)
 		{
 			synchronizationObject = new Object();
 			supplier = function;
@@ -18,23 +18,23 @@
 
 		public T? Get()
 		{
-			if (Volatile.Read(ref isFirstSummon))
+		    if (Volatile.Read(ref isFirstSummon))
 			{
-				lock(synchronizationObject)
+			    lock(synchronizationObject)
 				{
-					if (Volatile.Read(ref isFirstSummon))
+				    if (Volatile.Read(ref isFirstSummon))
 					{
-						try
+					    try
 						{
                             result = supplier!();
-							valueFlag = true;
+					        valueFlag = true;
 						} catch (Exception e)
 						{
-							exception = e;
+					        exception = e;
                             exceptionFlag = true;
                         } finally
 						{
-							supplier = null;
+					        supplier = null;
                             Volatile.Write(ref isFirstSummon, false);
                         }
                     } 
@@ -43,12 +43,12 @@
 
             if (!Volatile.Read(ref exceptionFlag) && valueFlag)
 			{
-				return result;
+			    return result;
 			} else if (exceptionFlag && exception != null) {
-				throw exception;
+			    throw exception;
 			} else
 			{
-				throw new Exception();
+			    throw new Exception();
 			}
 		}
 	}

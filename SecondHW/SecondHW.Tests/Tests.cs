@@ -10,22 +10,30 @@ public class Tests
     private static int NumberOfSingleThreadExperiments = 100;
     static private ManualResetEvent? manualResetEvent;
 
-    private static IEnumerable<TestCaseData> LazyImpl => new TestCaseData[]
+    private static IEnumerable<TestCaseData> LazyImplementation => new TestCaseData[]
     {
-        new TestCaseData(new LazyMultyThreadImpl<int>(() => throw new Exception())),
-        new TestCaseData(new LazySingleThreadImpl<int>(() => throw new Exception()))
+        new TestCaseData(new LazyMultyThreadImplementation<int>(() => throw new Exception())),
+        new TestCaseData(new LazySingleThreadImplementation<int>(() => throw new Exception()))
     };
 
-    [TestCaseSource(nameof(LazyImpl))]
+    private static IEnumerable<TestCaseData> LazyImplementationCheckOnceCreated => new TestCaseData[]
+    {
+        new TestCaseData(new LazyMultyThreadImplementation<Object>(() => new Object())),
+        new TestCaseData(new LazySingleThreadImplementation<Object>(() => new Object()))
+    };
+
+    [TestCaseSource(nameof(LazyImplementation))]
     public void InvalidSupplierShouldThrowException(ILazy<int> lazy)
     {
         Assert.Throws<Exception>(() => lazy.Get());
     }
 
-    [Test]
-    public void FunctionShouldBeCalledOnce()
+    [TestCaseSource(nameof(LazyImplementationCheckOnceCreated))]
+    public void FunctionShouldBeCalledOnce(ILazy<Object> lazy)
     {
-
+        var first = lazy.Get();
+        var second = lazy.Get();
+        Assert.That(first ==second);
     }
 
     [Test]
@@ -33,7 +41,7 @@ public class Tests
     {
         for (var i = 0; i < NumberOfSingleThreadExperiments; ++i)
         {
-            var lazy = new LazyMultyThreadImpl<int>(() => i * i);
+            var lazy = new LazyMultyThreadImplementation<int>(() => i * i);
             Assert.That(lazy.Get() == i * i);
         }
     }
@@ -47,7 +55,7 @@ public class Tests
         for (var i = 0; i < NumberOfMultyThreadTests; ++i)
         {
             var localI = i;
-            var lazy = new LazyMultyThreadImpl<int>(() => localI * localI);
+            var lazy = new LazyMultyThreadImplementation<int>(() => localI * localI);
             manualResetEvent.Reset();
 
             var results = new int[NumberOfThreads];
