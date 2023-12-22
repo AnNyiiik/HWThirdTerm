@@ -8,9 +8,7 @@ public static class MatrixReader
 {
     public static Matrix ReadMatrixesFromFile(string filePath)
     {
-
         using var reader = File.OpenText(filePath);
-        
         var getNumbersFromString = (string line) =>
         {
             string[] items = line.Split();

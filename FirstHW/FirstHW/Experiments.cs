@@ -14,8 +14,8 @@ public static class Experiments
     /// <param name="precision"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-	public static double CountExpectedValue(double[] resultsOfExperiments, int precision = 9)
-    { 
+    public static double CountExpectedValue(double[] resultsOfExperiments, int precision = 9)
+    {
         if (resultsOfExperiments.Length <= 0)
         {
             throw new ArgumentException();
