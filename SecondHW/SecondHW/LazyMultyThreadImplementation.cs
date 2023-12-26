@@ -17,41 +17,40 @@ namespace SecondHW
 			synchronizationObject = new Object();
 			supplier = function;
 		}
-
 		public T? Get()
 		{
-		    if (Volatile.Read(ref isFirstSummon))
-			{
-				lock(synchronizationObject)
-				{
-					if (Volatile.Read(ref isFirstSummon))
-					{
-						try
-						{
-							result = supplier!();
+            if (Volatile.Read(ref isFirstSummon))
+		    {
+			    lock(synchronizationObject)
+			    {
+				    if (Volatile.Read(ref isFirstSummon))
+				    {
+					    try
+					    {
+						    result = supplier!();
 						    valueFlag = true;
-						} catch (Exception e)
-						{
-							exception = e;
-							exceptionFlag = true;
-						} finally
-						{
-							supplier = null;
-							Volatile.Write(ref isFirstSummon, false);
-						}
-					}
-				}
-			}
+					    } catch (Exception e)
+					    {
+						    exception = e;
+						    exceptionFlag = true;
+					    } finally
+					    {
+						    supplier = null;
+						    Volatile.Write(ref isFirstSummon, false);
+					    }
+				    }
+			    }
+		    }
 
             if (!Volatile.Read(ref exceptionFlag) && valueFlag)
-			{
-				return result;
+            {
+                return result;
 			} else if (exceptionFlag && exception != null) {
-				throw exception;
-			} else
-			{
-				throw new Exception();
-			}
-		}
+                throw exception;
+            } else
+            {
+                throw new Exception();
+            }
+        }
 	}
 }
