@@ -29,8 +29,8 @@ namespace SecondHW
 					    try
 						{
 						    result = supplier!();
-					        valueFlag = true;
-						} catch (Exception e)
+                            valueFlag = true;
+                        } catch (Exception e)
 						{
 					        exception = e;
 						    exceptionFlag = true;
@@ -41,7 +41,7 @@ namespace SecondHW
                         }
                     } 
                 }
-			}
+            }
 
             if (!Volatile.Read(ref exceptionFlag) && valueFlag)
 			{
