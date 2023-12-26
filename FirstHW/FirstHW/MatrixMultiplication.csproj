@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="ConsoleTableExt" Version="3.2.0" />
     <PackageReference Include="ConsoleTables" Version="2.5.0" />
+    <PackageReference Include="StyleCop" Version="6.2.0" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Result.cs~" />

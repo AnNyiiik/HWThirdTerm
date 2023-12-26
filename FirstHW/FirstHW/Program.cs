@@ -2,7 +2,7 @@
 using ConsoleTables;
 using System.Drawing;
 
-int[] sizesOfMatrixes = { 10, 50, 100};
+int[] sizesOfMatrixes = { 100, 500, 800};
 
 //experiments for matrixes
 var table = new ConsoleTable("Value",
