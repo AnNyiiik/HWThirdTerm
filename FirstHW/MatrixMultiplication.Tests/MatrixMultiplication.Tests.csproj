@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
+    <PackageReference Include="coverlet.collector" Version="3.2.0" />
+    <PackageReference Include="StyleCop" Version="6.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FirstHW\MatrixMultiplication.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="ComplexCaseFirstMatrix.txt~" />
+    <None Remove="ComplexCaseCorrectResult.txt~" />
+    <None Remove="ComplexCaseSecondMatrix.txt~" />
+    <None Remove="ComplexCase.txt~" />
+    <None Remove="SimpleCaseCorrectResult.txt~" />
+    <None Remove="SimpleCaseFirstMatrix.txt~" />
+    <None Remove="SimpleCaseSecondMatrix.txt~" />
+    <None Remove="SimpleCase.txt~" />
+    <None Remove="Tests.cs~" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="ComplexCaseCorrectResult.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ComplexCaseFirstMatrix.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ComplexCaseSecondMatrix.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SimpleCaseCorrectResult.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SimpleCaseFirstMatrix.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="SimpleCaseSecondMatrix.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

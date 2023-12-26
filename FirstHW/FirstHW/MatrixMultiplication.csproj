@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ConsoleTableExt" Version="3.2.0" />
+    <PackageReference Include="ConsoleTables" Version="2.5.0" />
+    <PackageReference Include="StyleCop" Version="6.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Result.cs~" />
+    <None Remove="ResultOfExperiments.cs~" />
+    <None Remove="Program.cs~" />
+    <None Remove="MatrixWriter.cs~" />
+    <None Remove="MatrixReader.cs~" />
+    <None Remove="MatrixMultiplierSingleThreading.cs~" />
+    <None Remove="MatrixMultiplierMultyThreading.cs~" />
+    <None Remove="MatrixMultiplier.cs~" />
+    <None Remove="Matrixes.txt~" />
+    <None Remove="Matrix.cs~" />
+    <None Remove="Experiments.cs~" />
+    <None Remove="ResultsOfExperiment.txt~" />
+    <None Remove="ResultsOfExperiments.txt~" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="ResultsOfExperiments.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
