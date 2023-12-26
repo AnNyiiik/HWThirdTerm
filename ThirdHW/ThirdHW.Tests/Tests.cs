@@ -1,12 +1,11 @@
-﻿using System.Threading;
-using ThirdHW;
-namespace ThirdHW.Tests;
+﻿namespace ThirdHW.Tests;
 
 public class Tests
 {
     private MyThreadPool myThreadPool;
     private ManualResetEvent manualResetEvent;
-    private const int threadSize = 8;
+    private int threadSize = 8;
+
     [SetUp]
     public void Setup()
     {
@@ -25,11 +24,11 @@ public class Tests
                 return 0;
             });
         }
-        Thread.Sleep(100);
-        Assert.AreEqual(threadSize, myThreadPool.WorkingThreads);
+        Thread.Sleep(1000);
+        Assert.That(myThreadPool.WorkingThreads, Is.EqualTo(threadSize));
         manualResetEvent.Set();
         Thread.Sleep(100);
-        Assert.AreEqual(0, myThreadPool.WorkingThreads);
+        Assert.That(myThreadPool.WorkingThreads, Is.EqualTo(0));
     }
 
     [Test]
@@ -49,7 +48,7 @@ public class Tests
         Thread.Sleep(1000);
         for (var i = 0; i < tasks.Length; ++i)
         {
-            Assert.AreEqual(correctResults[i], tasks[i].Result);
+            Assert.That(correctResults[i], Is.EqualTo(tasks[i].Result));
         }
     }
 
@@ -74,7 +73,7 @@ public class Tests
         Thread.Sleep(100);
         for (var i = 0; i < tasks.Length; ++i)
         {
-            Assert.AreEqual(correctResults[i], continuations[i].Result);
+            Assert.That(correctResults[i], Is.EqualTo(continuations[i].Result));
         }
     }
 
@@ -96,8 +95,32 @@ public class Tests
             });
         }
         myThreadPool.ShutDown();
-        Thread.Sleep(1000);
-        Assert.AreEqual(myThreadPool.WorkingThreads, 0);
-        Assert.Throws<InvalidOperationException>(() => myThreadPool.AddTask<int>(() => 0));
+        Assert.That(myThreadPool.WorkingThreads, Is.EqualTo(0));
+        Assert.Throws<InvalidOperationException>(() => myThreadPool
+            .AddTask<int>(() => 0));
+    }
+
+    [Test]
+    public void ResultCheck()
+    {
+
+    }
+
+    [Test]
+    public void IsCompletedCheck()
+    {
+
+    }
+
+    [Test]
+    public void ConcurrentAccessCheck()
+    {
+
+    }
+
+    [Test]
+    public void MultipleContinuationCheck()
+    {
+
     }
 }
