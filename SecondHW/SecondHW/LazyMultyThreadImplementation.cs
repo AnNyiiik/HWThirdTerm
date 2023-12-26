@@ -22,35 +22,35 @@ namespace SecondHW
 		{
 		    if (Volatile.Read(ref isFirstSummon))
 			{
-			    lock(synchronizationObject)
+				lock(synchronizationObject)
 				{
-				    if (Volatile.Read(ref isFirstSummon))
+					if (Volatile.Read(ref isFirstSummon))
 					{
-					    try
+						try
 						{
-						    result = supplier!();
-							valueFlag = true;
+							result = supplier!();
+						    valueFlag = true;
 						} catch (Exception e)
 						{
-					        exception = e;
-						    exceptionFlag = true;
+							exception = e;
+							exceptionFlag = true;
 						} finally
 						{
-					        supplier = null;
-                            Volatile.Write(ref isFirstSummon, false);
-                        }
-                    } 
-                }
-            }
+							supplier = null;
+							Volatile.Write(ref isFirstSummon, false);
+						}
+					}
+				}
+			}
 
             if (!Volatile.Read(ref exceptionFlag) && valueFlag)
 			{
-			    return result;
+				return result;
 			} else if (exceptionFlag && exception != null) {
-			    throw exception;
+				throw exception;
 			} else
 			{
-			    throw new Exception();
+				throw new Exception();
 			}
 		}
 	}
