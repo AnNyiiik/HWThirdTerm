@@ -29,12 +29,12 @@ namespace SecondHW
 					    try
 						{
 						    result = supplier!();
-                            valueFlag = true;
-                        } catch (Exception e)
+							valueFlag = true;
+						} catch (Exception e)
 						{
 					        exception = e;
 						    exceptionFlag = true;
-                        } finally
+						} finally
 						{
 					        supplier = null;
                             Volatile.Write(ref isFirstSummon, false);
