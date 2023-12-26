@@ -41,7 +41,7 @@ public class Tests
     {
         for (var i = 0; i < NumberOfSingleThreadExperiments; ++i)
         {
-            var lazy = new LazyMultyThreadImplementation<int>(() => i * i);
+            var lazy = new LazySingleThreadImplementation<int>(() => i * i);
             Assert.That(lazy.Get() == i * i);
         }
     }

@@ -1,4 +1,6 @@
-﻿namespace SecondHW
+﻿using StyleCop;
+
+namespace SecondHW
 {
 	public class LazyMultyThreadImplementation<T>: ILazy<T>
 	{
@@ -26,12 +28,12 @@
 					{
 					    try
 						{
-                            result = supplier!();
+						    result = supplier!();
 					        valueFlag = true;
 						} catch (Exception e)
 						{
 					        exception = e;
-                            exceptionFlag = true;
+						    exceptionFlag = true;
                         } finally
 						{
 					        supplier = null;
