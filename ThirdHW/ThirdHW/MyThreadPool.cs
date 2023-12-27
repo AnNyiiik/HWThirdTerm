@@ -27,14 +27,13 @@ public class MyThreadPool
         this.waitHandles[1] = newTaskIsAwaiting;
         this.synchronizationObject = new Object();
         this.IsTerminated = false;
-        this.WorkingThreads = workingThreads;
         this.Tasks = new ConcurrentQueue<Action>();
         Start();
     }
 
     public ConcurrentQueue<Action> Tasks { get; private set; }
 
-    public int WorkingThreads { get; private set; }
+    public int WorkingThreads { get => workingThreads; }
 
     public bool IsTerminated { get; private set; }
 
@@ -103,12 +102,15 @@ public class MyThreadPool
     {
         if (!IsTerminated)
         {
-            cancellationTokenSource.Cancel();
+            lock(Tasks)
+            {
+                cancellationTokenSource.Cancel();
             foreach (var thread in threads)
             {
                 thread.Join();
             }
             IsTerminated = true;
+            }
         }
     }
 

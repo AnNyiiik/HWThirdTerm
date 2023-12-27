@@ -2,11 +2,10 @@
 
 public class MyTask<T1> : IMyTask<T1>
 {
-	private bool isCompleted;
 	private CancellationToken cancellationToken;
 	private MyThreadPool myThreadPool;
-	private Func<T1> function;
 	private T1? result;
+	private Func<T1> function;
 	private Exception? exception;
 	private ManualResetEvent manualResetEventForContinuations;
 	private ManualResetEvent manualResetEventForResult;
@@ -26,7 +25,8 @@ public class MyTask<T1> : IMyTask<T1>
 	    this.IsContinuation = manualResetEventIsUpperTaskCompleted == null ? false :
 		    true;
 	    this.continuations = new List<Action>();
-		this.IsCompleted = isCompleted;
+		this.IsCompleted = false;
+		
 	}
 
 	public bool IsContinuation { get; }
@@ -41,23 +41,24 @@ public class MyTask<T1> : IMyTask<T1>
     /// </summary>
     public T1 Result
 	{
-	    get
+		get
 		{
-		    if (cancellationToken.IsCancellationRequested && !isCompleted)
+			if (cancellationToken.IsCancellationRequested && !IsCompleted)
 			{
-			     throw new InvalidOperationException("shutdown was requested" +
-					"and task hadn't been completed");
+				throw new InvalidOperationException("shutdown was requested" +
+				   "and task hadn't been completed");
 			}
-		    manualResetEventForResult.WaitOne();
-		    if (exception != null)
+			manualResetEventForResult.WaitOne();
+			if (exception != null)
 			{
 				throw new AggregateException(exception);
 			}
-		    else
+			else
 			{
-			    return result!;
+				return result!;
 			}
-		} 
+		}
+		private set { }
 	}
 
 	/// <summary>
@@ -75,9 +76,9 @@ public class MyTask<T1> : IMyTask<T1>
 			{
 				lock(myThreadPool.Tasks)
 				{
-                    if (result != null)
+                    if (IsCompleted)
                     {
-                        return (myThreadPool.AddTask<T2>(() => func(result),
+                        return (myThreadPool.AddTask<T2>(() => func(result!),
                             manualResetEventForContinuations));
                     }
                     var task = new MyTask<T2>(() => func(this.Result),
@@ -122,7 +123,7 @@ public class MyTask<T1> : IMyTask<T1>
 					}
 				}
 			}
-		    isCompleted = true;
+		    IsCompleted = true;
 		    manualResetEventForContinuations.Set();
 
 		}

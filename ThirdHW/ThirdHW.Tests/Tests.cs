@@ -4,6 +4,7 @@ public class Tests
 {
     private MyThreadPool myThreadPool;
     private ManualResetEvent manualResetEvent;
+    private AutoResetEvent autoResetEvent;
     private int threadSize = 8;
 
     [SetUp]
@@ -11,6 +12,7 @@ public class Tests
     {
         myThreadPool = new MyThreadPool(threadSize);
         manualResetEvent = new ManualResetEvent(false);
+        autoResetEvent = new AutoResetEvent(false);
     }
 
     [Test]
@@ -103,24 +105,76 @@ public class Tests
     [Test]
     public void ResultCheck()
     {
-
+        var task = myThreadPool.AddTask<int>(() =>
+        {
+            var sum = 0;
+            for (var i = 0; i < 100; ++i)
+            {
+                sum += i;
+            }
+            return sum;
+        });
+        Assert.That(task.Result, Is.EqualTo(4950));
     }
 
     [Test]
     public void IsCompletedCheck()
     {
-
+        var task = myThreadPool.AddTask<int>(() =>
+        {
+            manualResetEvent.WaitOne();
+            return 0;
+        });
+        Assert.That(task.IsCompleted, Is.EqualTo(false));
+        manualResetEvent.Set();
+        Thread.Sleep(1000);
+        Assert.That(task.IsCompleted, Is.EqualTo(true));
     }
 
     [Test]
-    public void ConcurrentAccessCheck()
+    public void ConcurrentAccessShoutDowndAndContinueWithCheck()
     {
+        //var task = myThreadPool.AddTask<int>(() =>
+        //{
+        //    var i = 1;
+        //    for (var j = 0; j < 10; ++j)
+        //    {
+        //        i *= 2;
+        //    }
+        //    return i;
+        //});
 
+        //var firstContinuation = task.ContinueWith<int>(i =>
+        //{
+        //    autoResetEvent.WaitOne();
+        //    return i / 2;
+        //});
+        //var secondContinuation = task.ContinueWith<int>(i =>
+        //{
+        //    autoResetEvent.WaitOne();
+        //    return i - 1;
+        //});
+        //myThreadPool.ShutDown();
+        //autoResetEvent.Set();
+        //Assert.That(task.Result, Is.EqualTo(1024));
+        //Assert.Throws<InvalidOperationException>(() =>
+        //    { var result = firstContinuation.Result; });
+        //Assert.Throws<InvalidOperationException>(() =>
+        //{ var result = secondContinuation.Result; });
     }
 
     [Test]
     public void MultipleContinuationCheck()
     {
-
+        var task = myThreadPool.AddTask<int>(() =>
+        {
+            var i = 1;
+            for (var j = 0; j < 10; ++j)
+            {
+                i *= 2;
+            }
+            return i;
+        }).ContinueWith<int>(i => i / 2).ContinueWith<string>(i => i.ToString());
+        Assert.That(task.Result, Is.EqualTo("512"));
     }
 }
