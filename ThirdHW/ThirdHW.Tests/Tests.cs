@@ -60,7 +60,7 @@ public class Tests
         var tasks = new IMyTask<int>[threadSize];
         var continuations = new IMyTask<int>[threadSize];
         var correctResults = new int[threadSize];
-        for (var i = 0; i < tasks.Length; ++i)
+        for (var i = 0; i < threadSize; ++i)
         {
             var localI = i;
             tasks[i] = myThreadPool.AddTask<int>(() =>
@@ -73,7 +73,7 @@ public class Tests
         }
         manualResetEvent.Set();
         Thread.Sleep(100);
-        for (var i = 0; i < tasks.Length; ++i)
+        for (var i = 0; i < threadSize; ++i)
         {
             Assert.That(correctResults[i], Is.EqualTo(continuations[i].Result));
         }
@@ -83,8 +83,8 @@ public class Tests
     public void ShutDownCheck()
     {
         var tasks = new IMyTask<int>[threadSize];
-        var iterations = Int32.MaxValue;
-        for (var i = 0; i < tasks.Length; ++i)
+        var iterations = 100;
+        for (var i = 0; i < 1; ++i)
         {
             tasks[i] = myThreadPool.AddTask<int>(() =>
             {

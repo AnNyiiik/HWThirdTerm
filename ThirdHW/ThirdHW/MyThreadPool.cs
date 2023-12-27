@@ -78,6 +78,11 @@ public class MyThreadPool
                         }
                     }
 
+                    if (cancellationTokenSource.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
                     lock (Tasks)
                     {
                         if (Tasks.Count > 0)
@@ -102,15 +107,14 @@ public class MyThreadPool
     {
         if (!IsTerminated)
         {
-            lock(Tasks)
-            {
+            
                 cancellationTokenSource.Cancel();
-            foreach (var thread in threads)
-            {
-                thread.Join();
-            }
-            IsTerminated = true;
-            }
+                foreach (var thread in threads)
+                {
+                    thread.Join();
+                }
+                IsTerminated = true;
+            
         }
     }
 

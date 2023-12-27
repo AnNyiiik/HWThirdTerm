@@ -4,8 +4,8 @@ public class MyTask<T1> : IMyTask<T1>
 {
 	private CancellationToken cancellationToken;
 	private MyThreadPool myThreadPool;
-	private T1? result;
 	private Func<T1> function;
+	private T1? result;
 	private Exception? exception;
 	private ManualResetEvent manualResetEventForContinuations;
 	private ManualResetEvent manualResetEventForResult;
@@ -26,7 +26,6 @@ public class MyTask<T1> : IMyTask<T1>
 		    true;
 	    this.continuations = new List<Action>();
 		this.IsCompleted = false;
-		
 	}
 
 	public bool IsContinuation { get; }
@@ -41,24 +40,23 @@ public class MyTask<T1> : IMyTask<T1>
     /// </summary>
     public T1 Result
 	{
-		get
+	    get
 		{
-			if (cancellationToken.IsCancellationRequested && !IsCompleted)
+		    if (cancellationToken.IsCancellationRequested && !IsCompleted)
 			{
-				throw new InvalidOperationException("shutdown was requested" +
-				   "and task hadn't been completed");
+			     throw new InvalidOperationException("shutdown was requested" +
+					"and task hadn't been completed");
 			}
-			manualResetEventForResult.WaitOne();
-			if (exception != null)
+		    manualResetEventForResult.WaitOne();
+		    if (exception != null)
 			{
 				throw new AggregateException(exception);
 			}
-			else
+		    else
 			{
-				return result!;
+			    return result!;
 			}
-		}
-		private set { }
+		} 
 	}
 
 	/// <summary>
@@ -76,9 +74,9 @@ public class MyTask<T1> : IMyTask<T1>
 			{
 				lock(myThreadPool.Tasks)
 				{
-                    if (IsCompleted)
+                    if (result != null)
                     {
-                        return (myThreadPool.AddTask<T2>(() => func(result!),
+                        return (myThreadPool.AddTask<T2>(() => func(result),
                             manualResetEventForContinuations));
                     }
                     var task = new MyTask<T2>(() => func(this.Result),
