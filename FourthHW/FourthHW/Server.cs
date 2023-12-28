@@ -1,22 +1,35 @@
-﻿using System.Net;
+﻿namespace SimpleFTPServer;
+
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
-namespace FourthHW;
 
+/// <summary>
+/// Implements network server entity.
+/// </summary>
 public class Server
 {
     private int port;
     private CancellationToken cancellationToken;
 
-    public Server(int port, CancellationToken token)
-	{
-		this.port = port;
-		this.cancellationToken = token;
-	}
-
-    public async Task LaunchServer()
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Server"/> class.
+    /// </summary>
+    /// <param name="port">Network connection port number.</param>
+    /// <param name="cancellationToken">Server cancellatin token to suspend work.</param>
+    public Server(int port, CancellationToken cancellationToken)
     {
-        var listener = new TcpListener(IPAddress.Any, port);
+        this.port = port;
+        this.cancellationToken = cancellationToken;
+    }
+
+    /// <summary>
+    /// Starts the server.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    public async Task Start()
+    {
+        var listener = new TcpListener(IPAddress.Any, this.port);
         listener.Start();
         var serverTasks = new List<Task>();
         while (!this.cancellationToken.IsCancellationRequested)
@@ -27,9 +40,7 @@ public class Server
                 var stream = new NetworkStream(socket);
                 var reader = new StreamReader(stream);
                 var data = await reader.ReadLineAsync();
-                var response = (data == null || (data[0] != '1'
-                    && data[0] != '2')) ? "-1\n" : Response(data[0],
-                    data.Remove(0, 2));
+                var response = data == null ? "-1\n" : GenerateResponse(data);
                 var writer = new StreamWriter(stream);
                 await writer.WriteAsync(response);
                 await writer.FlushAsync();
@@ -41,51 +52,73 @@ public class Server
         await Task.WhenAll(serverTasks.ToArray());
     }
 
-
-    private string Response(char option, string path)
+    private static string GenerateResponseToList(string pathToDirectory)
     {
-        return (option == '1') ? ListResponse(path) : GetResponse(path);
-    }
-
-        
-    private string ListResponse(string path)
-	{
-		if (!Directory.Exists(path))
-		{
-			return "-1";
-		}
-
-		var directories = Directory.GetDirectories(path);
-        var files = Directory.GetFiles(path);
-        var size = 0;
-		var response = new StringBuilder();
-
-		for (var i = 0; i < directories.Length; ++i)
-		{
-			response.Append(directories[i].ToString() + " true");
-            size++;
-		}
-        for (var i = 0; i < files.Length; ++i)
+        var response = new StringBuilder();
+        try
         {
-            if (files[i].Contains('~'))
+            var subDirectories = Directory.GetDirectories(pathToDirectory);
+            var files = Directory.GetFiles(pathToDirectory);
+            response.Append((subDirectories.Length + files.Length).ToString());
+            foreach (var directory in subDirectories)
             {
-                continue;
+                response.Append(' ');
+                response.Append($"{directory} true");
             }
-            response.Append(files[i].ToString() + " false");
-            size++;
+
+            foreach (var file in files)
+            {
+                response.Append(' ');
+                response.Append($"{file} false");
+            }
+
+            response.Append("\n");
+            return response.ToString();
         }
-		return size.ToString() + response + "\n";
+        catch (DirectoryNotFoundException)
+        {
+            response.Clear();
+            response.Append("-1\n");
+            return response.ToString();
+        }
     }
 
-    private string GetResponse(string path)
+    private static string GenerateResponseToGet(string pathToFile)
     {
-        if (!File.Exists(path))
+        var response = new StringBuilder();
+        try
         {
-            return "-1";
-        }
+            if (!Path.HasExtension(pathToFile))
+            {
+                response.Append("-1\n");
+                return response.ToString();
+            }
 
-        var bytes = File.ReadAllBytesAsync(path).Result;
-        var length = new FileInfo(path).Length;
-        return length.ToString() +  " " + Encoding.Default.GetString(bytes) + "\n";
+            var fileContent = File.ReadAllBytes(pathToFile);
+            response.Append(fileContent.Length.ToString());
+            response.Append(' ');
+            response.AppendLine(Encoding.Default.GetString(fileContent));
+
+            response.Append("\n");
+            return response.ToString();
+        }
+        catch (DirectoryNotFoundException)
+        {
+            response.Clear();
+            response.Append("-1\n");
+            return response.ToString();
+        }
+    }
+
+    private static string GenerateResponse(string requestData)
+    {
+        var result = requestData[0] switch
+        {
+            '1' => GenerateResponseToList(requestData.Remove(0, 2)),
+            '2' => GenerateResponseToGet(requestData.Remove(0, 2)),
+            _ => "Request number not found",
+        };
+
+        return result;
     }
 }
