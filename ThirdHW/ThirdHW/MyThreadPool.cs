@@ -1,153 +1,166 @@
-﻿using System;
+﻿namespace ThirdHW;
+
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace ThirdHW;
-
+/// <summary>
+/// Class which enables to perform several tasks parallely.
+/// </summary>
 public class MyThreadPool
 {
-    private int numberOfThreads;
+    private int maxTimeForCompleteJointPerThread;
+    private ConcurrentQueue<Action> tasks;
     private Thread[] threads;
     private CancellationTokenSource cancellationTokenSource;
-    private WaitHandle[] waitHandles;
-    private ManualResetEvent isThereAnyTasksInQueue;
     private AutoResetEvent newTaskIsAwaiting;
-    private Object synchronizationObject;
+    private ManualResetEvent areAnyTasksInQueue;
+    private WaitHandle[] waitHandlers;
+    private object synchronizationObject;
     private int workingThreads;
+    private volatile bool[] isWorking;
 
-    public MyThreadPool(int numberOfThreads)
+    /// <summary>
+    /// Instantiates a new instance of MyThreadPool class.
+    /// </summary>
+    public MyThreadPool(int numberOfThreads, int maxTimeForCompleteJointPerThread = 1000)
     {
-        this.numberOfThreads = numberOfThreads;
+        if (numberOfThreads <= 0)
+        {
+            throw new InvalidDataException();
+        }
+
+        this.isWorking = new bool[numberOfThreads];
+        this.tasks = new ConcurrentQueue<Action>();
         this.threads = new Thread[numberOfThreads];
         this.cancellationTokenSource = new CancellationTokenSource();
-        this.waitHandles = new WaitHandle[2];
-        this.isThereAnyTasksInQueue = new ManualResetEvent(false);
         this.newTaskIsAwaiting = new AutoResetEvent(false);
-        this.waitHandles[0] = isThereAnyTasksInQueue;
-        this.waitHandles[1] = newTaskIsAwaiting;
-        this.synchronizationObject = new Object();
-        this.IsTerminated = false;
-        this.Tasks = new ConcurrentQueue<Action>();
+        this.areAnyTasksInQueue = new ManualResetEvent(false);
+        this.waitHandlers = new WaitHandle[2]{this.newTaskIsAwaiting,
+            this.areAnyTasksInQueue};
+        this.maxTimeForCompleteJointPerThread = maxTimeForCompleteJointPerThread;
+        this.synchronizationObject = new object();
         Start();
     }
 
-    public ConcurrentQueue<Action> Tasks { get; private set; }
-
+    /// <summary>
+    /// Returns a number of threads, which calculates task at the current moment.
+    /// </summary>
     public int WorkingThreads { get => workingThreads; }
 
+    /// <summary>
+    /// Indicates if the thread pool is active or not (ShutDown was requested).
+    /// </summary>
     public bool IsTerminated { get; private set; }
 
-    /// <summary>
-    /// Activates the thread-pool work.
-    /// </summary>
     private void Start()
     {
-        for (var i = 0; i < numberOfThreads; ++i)
+        for (var i = 0; i < threads.Length; ++i)
         {
+            var localI = i;
             threads[i] = new Thread(() =>
             {
                 while (!cancellationTokenSource.IsCancellationRequested)
                 {
+                    WaitHandle.WaitAny(waitHandlers);
                     if (cancellationTokenSource.IsCancellationRequested)
                     {
                         break;
                     }
 
-                    WaitHandle.WaitAny(waitHandles);
-
-                    lock (Tasks)
+                    lock (tasks)
                     {
-                        if (Tasks.Count > 0)
+                        if (tasks.Count > 0)
                         {
-                            isThereAnyTasksInQueue.Set();
+                            areAnyTasksInQueue.Set();
                         }
                         else
                         {
-                            isThereAnyTasksInQueue.Reset();
+                            areAnyTasksInQueue.Reset();
                         }
                     }
 
-                    if (Tasks.Count > 0)
+                    if (!tasks.IsEmpty)
                     {
-                        var isavailable = Tasks.TryDequeue(out var action);
-                        if (isavailable && action != null)
+                        var isAvailable = tasks.TryDequeue(out var action);
+                        if (isAvailable && action != null)
                         {
                             Interlocked.Increment(ref workingThreads);
-                            action?.Invoke();
+                            isWorking[localI] = true;
+                            action.Invoke();
+                            isWorking[localI] = false;
                             Interlocked.Decrement(ref workingThreads);
+                            action = null;
                         }
                     }
 
-                    if (cancellationTokenSource.IsCancellationRequested)
+                    lock (tasks)
                     {
-                        break;
-                    }
-
-                    lock (Tasks)
-                    {
-                        if (Tasks.Count > 0)
+                        if (tasks.Count > 0)
                         {
-                            isThereAnyTasksInQueue.Set();
+                            areAnyTasksInQueue.Set();
                         }
                         else
                         {
-                            isThereAnyTasksInQueue.Reset();
+                            areAnyTasksInQueue.Reset();
                         }
                     }
                 }
-             });
+            });
             threads[i].Start();
         }
     }
 
     /// <summary>
-    /// Makes all the threads in the pool to complete their work and stop working.
+    /// Add new task item to the queue of tasks.
     /// </summary>
-    public void ShutDown()
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="function"></param>
+    /// <param name="isUpperTaskCompleted"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public IMyTask<T1> AddTask<T1>(Func<T1> function, ManualResetEvent? isUpperTaskCompleted = null)
     {
-        if (!IsTerminated)
+        lock (this.synchronizationObject)
         {
-            
-                cancellationTokenSource.Cancel();
-                foreach (var thread in threads)
-                {
-                    thread.Join();
-                }
-                IsTerminated = true;
-            
+            if (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                throw new InvalidOperationException("Shutdown has been requested");
+            }
+
+            var myTask = isUpperTaskCompleted == null ? new MyTask<T1>(function, this)
+                : new MyTask<T1>(function, this, isUpperTaskCompleted);
+            lock (this.tasks)
+            {
+                this.tasks.Enqueue(() => myTask.Performe());
+            }
+
+            this.newTaskIsAwaiting.Set();
+            return myTask;
         }
     }
 
     /// <summary>
-    /// Add task to the thread pool. 
+    /// Terminates the work of thread pool and makes threads to performe already started tasks.
     /// </summary>
-    /// <typeparam name="T1">Type of a return value</typeparam>
-    /// <param name="function">Action to performe</param>
-    /// <param name="manualResetEventIsUpperTaskCompleted">Reset event to blok continuation task performance till the upper is ready</param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public IMyTask<T1> AddTask<T1>(Func<T1> function, ManualResetEvent? manualResetEventIsUpperTaskCompleted = null)
+    /// <exception cref="EternalTaskException"></exception>
+    public void ShutDown()
     {
-        if (!cancellationTokenSource.IsCancellationRequested)
+        lock (this.synchronizationObject)
         {
-            lock(Tasks)
+            this.cancellationTokenSource.Cancel();
+            this.areAnyTasksInQueue.Set();
+            for (var i = 0; i < this.threads.Length; ++i)
             {
-                lock (synchronizationObject)
+                this.threads[i].Join(this.maxTimeForCompleteJointPerThread);
+                if (isWorking[i])
                 {
-                    MyTask<T1> newTask;
-                    newTask = new MyTask<T1>(function, this,
-                        cancellationTokenSource.Token,
-                        manualResetEventIsUpperTaskCompleted);
-                    Tasks.Enqueue(() => newTask.Performe());
-                    newTaskIsAwaiting.Set();
-                    return newTask;
+                    throw new EternalTaskException("The task hasn't been finished" +
+                        $" for {this.maxTimeForCompleteJointPerThread} milliseconds");
                 }
             }
+
+            this.IsTerminated = true;
         }
-        else
-        {
-            throw new InvalidOperationException();
-        }
-        
     }
 }
