@@ -1,9 +1,9 @@
-﻿using SimpleFTPServer;
+﻿using FourthHW;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
 
-namespace FourthHW.Tests;
+namespace SimpleFTPTests;
 
 public class ServerTests
 {
@@ -13,7 +13,7 @@ public class ServerTests
     private static byte[] textFileBytes = File.ReadAllBytes("../../../TestDirectory/TestFile1.txt");
     private static string testGetExpectedResponse = $"{System.Text.Encoding.Default.GetString(textFileBytes)}\n";
 
-    private static string incorrectTestListRequest = "1 ../../../TestDirectory/TestFile1.txt";
+    private static string incorrectTestListRequest = "1 ../../../TestDirectory/TestFile1";
     private static string expectedIncorrectTestListResponse = "-1";
 
     [SetUp]
@@ -106,7 +106,7 @@ public class ServerTests
 
     private async Task<string> ClientMoqWithFiveSecondsWaiting(int port)
     {
-        var request = "1 ../../../TestDirectory/NestedFolder";
+        var request = "1 ../../../TestDirectory/TestDirectory";
         await Task.Delay(5000);
         return await ClientMoq(port, request);
     }

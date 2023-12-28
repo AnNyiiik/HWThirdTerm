@@ -1,4 +1,4 @@
-﻿namespace SimpleFTPClient;
+﻿namespace FourthHW;
 
 using System;
 using System.IO;

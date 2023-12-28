@@ -1,28 +1,28 @@
-﻿namespace FourthHW.Tests;
+﻿namespace SimpleFTPTests;
 
 using SimpleFTPClient;
 using System.Net.Sockets;
 using System.Net;
-using static SimpleFTPClient.Client;
+using static FourthHW.Client;
+using FourthHW;
 
 public class ClientTests
 {
     private CancellationTokenSource cancellationTokenSource;
 
-    private static string pathForTestListRequest = "../FourthHW.Tests/TestDirectory";
-    private static string testListResponse = "2 ../FourthHW.Tests/TestDirectory/TestDirectory true" +
-    " ../FourthHW.Tests/TestDirectory/TestFile1.txt false" +
-        " ../FourthHW.Tests/TestDirectory/TestFile2.txt false\n";
+    private static string pathForTestListRequest = "../SimpleFTPTests/TestDirectory";
+    private static string testListResponse = "2 ../SimpleFTPTests/TestDirectory/NestedFolder true" +
+    " ../SimpleFTPTests/TestDirectory/Text.txt false\n";
 
-    private static string pathForTestGetRequest = "../../../TestDirectory/TestFile1.txt";
-    private static byte[] textFileBytes = File.ReadAllBytes("../../../TestDirectory/TestFile1.txt");
+    private static string pathForTestGetRequest = "../../../TestDirectory/TextFirst.txt";
+    private static byte[] textFileBytes = File.ReadAllBytes("../../../TestDirectory/TextFirst.txt");
     private static string testGetResponse = $"{textFileBytes.Length} {System.Text.Encoding.Default.GetString(textFileBytes)}\n";
 
     private static string pathForUnusualTestGetRequest = "../../../TestDirectory/NestedFolder/Text1.txt";
-    private static byte[] text1FileBytes = File.ReadAllBytes("../../../TestDirectory/Text1.txt");
+    private static byte[] text1FileBytes = File.ReadAllBytes("../../../TestDirectory/NestedFolder/Text1.txt");
     private static string unusualTestGetResponse = $"{text1FileBytes.Length} {System.Text.Encoding.Default.GetString(text1FileBytes)}\n";
 
-    private static string pathForIncorrectResponseTestListRequest = "../FourthHW.Tests/TestDirectory/TestDirectory";
+    private static string pathForIncorrectResponseTestListRequest = "../SimpleFTPTests/TestDirectory/NestedFolder11";
 
     [SetUp]
     public void Setup()
@@ -34,7 +34,7 @@ public class ClientTests
     public async Task StandartListRequestTest()
     {
         var client = new Client(8888);
-        await Task.Run(async () => await ServerStartMoq(8888, cancellationTokenSource.Token));
+        Task.Run(async () => await ServerStartMoq(8888, cancellationTokenSource.Token));
         var result = await client.List(pathForTestListRequest);
         cancellationTokenSource.Cancel();
         var expectedResult = new List<DirectoryElement>
@@ -49,7 +49,7 @@ public class ClientTests
     public async Task GetRequestTestWithEndOfLineCharacterInTheMiddle()
     {
         var client = new Client(8889);
-        await Task.Run(async () => await ServerStartMoq(8889, cancellationTokenSource.Token));
+        Task.Run(async () => await ServerStartMoq(8889, cancellationTokenSource.Token));
         using var resultStream = new MemoryStream();
         await client.Get(pathForUnusualTestGetRequest, resultStream);
         resultStream.Position = 0;
