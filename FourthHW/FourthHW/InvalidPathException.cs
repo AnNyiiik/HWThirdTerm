@@ -1,4 +1,4 @@
-﻿namespace SimpleFTPClient;
+﻿namespace FourthHW;
 
 /// <summary>
 /// Throws if the network member tries to process an incorrect path.

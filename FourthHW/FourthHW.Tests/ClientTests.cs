@@ -1,6 +1,5 @@
 ﻿namespace SimpleFTPTests;
 
-using SimpleFTPClient;
 using System.Net.Sockets;
 using System.Net;
 using static FourthHW.Client;

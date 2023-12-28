@@ -1,4 +1,4 @@
-﻿namespace SimpleFTPClient;
+﻿namespace FourthHW;
 
 /// <summary>
 /// Throws if the client receives an incorrect response from the server.
