@@ -2,132 +2,119 @@
 
 public class MyTask<T1> : IMyTask<T1>
 {
-	private CancellationToken cancellationToken;
-	private MyThreadPool myThreadPool;
-	private Func<T1> function;
-	private T1? result;
-	private Exception? exception;
-	private ManualResetEvent manualResetEventForContinuations;
-	private ManualResetEvent manualResetEventForResult;
-	private ManualResetEvent? manualResetEventIsUpperTaskCompleted;
-	private List<Action> continuations;
+    private Func<T1> function;
+    private T1? result;
+    private bool isResultReady;
 
-	public MyTask(Func<T1> function, MyThreadPool myThreadPool,
-		CancellationToken cancellationToken,
-		ManualResetEvent? manualResetEventIsUpperTaskCompleted = null)
-	{
-	    this.function = function;
-		this.cancellationToken = cancellationToken;
-	    this.myThreadPool = myThreadPool;
-	    this.manualResetEventForContinuations = new ManualResetEvent(false);
-	    this.manualResetEventForResult = new ManualResetEvent(false);
-	    this.manualResetEventIsUpperTaskCompleted = manualResetEventIsUpperTaskCompleted;
-	    this.IsContinuation = manualResetEventIsUpperTaskCompleted == null ? false :
-		    true;
-	    this.continuations = new List<Action>();
-		this.IsCompleted = false;
-	}
+    private List<Action> continuations;
 
-	public bool IsContinuation { get; }
+    private ManualResetEvent accessToResult;
+    private ManualResetEvent? isUpperTaskCompleted;
+    private ManualResetEvent manualResetEventForContinuations;
 
-	public bool IsCompleted { get; private set; }
+    private Exception? exception;
+    private MyThreadPool myThreadPool;
 
     /// <summary>
-    /// Returns the result of a task if it is ready.
-    /// If it is not completed yet and shoutdown isn't requested,
-    /// makes thread to wait until the result is ready. Throws
-	/// InvalidOperationException if shoutdown was requested.
+    /// Initializes a new instance of the <see cref="MyTask{TResult}"/> class.
+    /// </summary>
+    /// <param name="function">Task function.</param>
+    /// <param name="myThreadPool">ThreadPool that will execute this task.</param>
+    /// <param name="isUpperTaskCompleted">Parental task ManualResetEvent (for continuation task).</param>
+    public MyTask(Func<T1> function, MyThreadPool myThreadPool,
+        ManualResetEvent? manualResetEventForContinuations = null)
+    {
+        this.function = function;
+        this.continuations = new List<Action>();
+        this.accessToResult = new ManualResetEvent(false);
+        this.myThreadPool = myThreadPool;
+        this.isUpperTaskCompleted = manualResetEventForContinuations;
+        this.manualResetEventForContinuations = new ManualResetEvent(false);
+    }
+
+    /// <summary>
+    /// Returns true value if task has been already calculated.
+    /// </summary>
+    public bool IsCompleted => this.isResultReady;
+
+    /// <summary>
+    /// Returns the task result.
     /// </summary>
     public T1 Result
-	{
-	    get
-		{
-		    if (cancellationToken.IsCancellationRequested && !IsCompleted)
-			{
-			     throw new InvalidOperationException("shutdown was requested" +
-					"and task hadn't been completed");
-			}
-		    manualResetEventForResult.WaitOne();
-		    if (exception != null)
-			{
-				throw new AggregateException(exception);
-			}
-		    else
-			{
-			    return result!;
-			}
-		} 
-	}
+    {
+        get
+        {
+            if (this.myThreadPool.IsTerminated && !this.isResultReady)
+            {
+                throw new InvalidOperationException("Hasn't been started when the Shutdown was requested.");
+            }
 
-	/// <summary>
-	/// Add a continuation to the task.
-	/// </summary>
-	/// <typeparam name="T2"></typeparam>
-	/// <param name="func"></param>
-	/// <returns></returns>
-	/// <exception cref="InvalidOperationException"></exception>
-	public IMyTask<T2> ContinueWith<T2>(Func<T1, T2> func)
-	{
-	    if (!cancellationToken.IsCancellationRequested)
-		{
-		    lock(continuations)
-			{
-				lock(myThreadPool.Tasks)
-				{
-                    if (result != null)
+            this.accessToResult.WaitOne();
+            if (this.exception != null)
+            {
+                throw new AggregateException(this.exception);
+            }
+
+            return this.result!;
+        }
+    }
+
+    /// <summary>
+    /// Creates a new task which operates with the result of this task.
+    /// </summary>
+    /// <typeparam name="T2">Value type for the continuation result.</typeparam>
+    /// <param name="func">Function for creating a new task.</param>
+    /// <returns>Task with new return value type of the function.</returns>
+    public IMyTask<T2> ContinueWith<T2>(Func<T1, T2> func)
+    {
+        lock (this.continuations)
+        {
+            if (this.result != null)
+            {
+                return this.myThreadPool.AddTask(() => func(this.Result), this.manualResetEventForContinuations);
+            }
+
+            var continuation = new MyTask<T2>(
+                () => func(this.Result),
+                this.myThreadPool,
+                this.manualResetEventForContinuations);
+            this.continuations.Add(() => continuation.Performe());
+            return continuation;
+        }
+    }
+
+    /// <summary>
+    /// Calculates task result.
+    /// </summary>
+    public void Performe()
+    {
+        try
+        {
+            if (isUpperTaskCompleted != null)
+            {
+                this.isUpperTaskCompleted!.WaitOne();
+            }
+
+            this.result = this.function();
+
+            lock (this.continuations)
+            {
+                if (this.continuations.Count > 0)
+                {
+                    foreach (var continuation in this.continuations)
                     {
-                        return (myThreadPool.AddTask<T2>(() => func(result),
-                            manualResetEventForContinuations));
+                        this.myThreadPool.AddTask(() => continuation, this.isUpperTaskCompleted);
                     }
-                    var task = new MyTask<T2>(() => func(this.Result),
-                        myThreadPool,
-                        cancellationToken,
-                        manualResetEventForContinuations);
-                    continuations.Add(() => task.Performe());
-                    return task;
                 }
-			}
-		}
-		else
-		{
-		    throw new InvalidOperationException();
-		}
-	}
+            }
+        }
+        catch (Exception ex)
+        {
+            this.exception = ex;
+        }
 
-	/// <summary>
-	/// Performe the task.
-	/// </summary>
-	public void Performe()
-	{
-	    try
-		{
-		    if (manualResetEventIsUpperTaskCompleted != null)
-			{
-			    manualResetEventIsUpperTaskCompleted.WaitOne();
-			}
-		    result = function();
-            manualResetEventForResult.Set();
-            lock (continuations)
-			{
-			    if (continuations.Count > 0)
-				{
-
-				    foreach(var continuation in continuations)
-					{
-						lock(myThreadPool.Tasks)
-						{
-                            myThreadPool.AddTask(() => continuation, manualResetEventForResult);
-                        }
-					}
-				}
-			}
-		    IsCompleted = true;
-		    manualResetEventForContinuations.Set();
-
-		}
-	    catch (Exception e)
-		{
-			exception = e;
-		}
-	}
+        this.isResultReady = true;
+        this.accessToResult.Set();
+        this.manualResetEventForContinuations.Set();
+    }
 }
