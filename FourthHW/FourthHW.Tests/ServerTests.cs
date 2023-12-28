@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
 
-namespace SimpleFTPTests;
+namespace FourthHW.Tests;
 
 public class ServerTests
 {
@@ -11,7 +11,7 @@ public class ServerTests
 
     private static string testGetRequest = "2 ../../../TestDirectory/TestFile1.txt";
     private static byte[] textFileBytes = File.ReadAllBytes("../../../TestDirectory/TestFile1.txt");
-    private static string testGetExpectedResponse = $"{System.Text.Encoding.Default.GetString(textFileBytes)}\n";
+    private static string testGetExpectedResponse = $"{Encoding.Default.GetString(textFileBytes)}\n";
 
     private static string incorrectTestListRequest = "1 ../../../TestDirectory/TestFile1";
     private static string expectedIncorrectTestListResponse = "-1";
@@ -23,21 +23,21 @@ public class ServerTests
     }
 
     [Test]
-    public async Task StandartGetResponseTest()
+    public async Task GetTest()
     {
         var server = new Server(8118, cancellationTokenSource.Token);
-        await Task.Run(async () => await server.Start());
-        var result = await ClientMoq(8118, testGetRequest);
+        await Task.Run(async () => await server.LaunchServer());
+        var result = await ClientWork(8118, testGetRequest);
         cancellationTokenSource.Cancel();
         Assert.That(result.Remove(result.Length - 2) == testGetExpectedResponse.Remove(testGetExpectedResponse.Length - 1));
     }
 
     [Test]
-    public async Task IncorrectPathRequestToServerTest()
+    public async Task IncorrectPathTest()
     {
         var server = new Server(8113, cancellationTokenSource.Token);
-        await Task.Run(async () => await server.Start());
-        var result = await ClientMoq(8113, incorrectTestListRequest);
+        await Task.Run(async () => await server.LaunchServer());
+        var result = await ClientWork(8113, incorrectTestListRequest);
         cancellationTokenSource.Cancel();
         Assert.That(result == expectedIncorrectTestListResponse);
     }
@@ -46,25 +46,25 @@ public class ServerTests
     public void MultipleClientsTest()
     {
         var server = new Server(8114, cancellationTokenSource.Token);
-        Task.Run(async () => await server.Start());
+        Task.Run(async () => await server.LaunchServer());
         var stopWatch = new Stopwatch();
         stopWatch.Start();
         Task.WaitAll(
-            ClientMoqWithFiveSecondsWaiting(8114),
-            ClientMoqWithFiveSecondsWaiting(8114),
-            ClientMoqWithFiveSecondsWaiting(8114),
-            ClientMoqWithFiveSecondsWaiting(8114),
-            ClientMoqWithFiveSecondsWaiting(8114));
+            ClientWork(8114, "1 ../../../TestDirectory/TestDirectory", 3000),
+            ClientWork(8114, "1 ../../../TestDirectory/TestDirectory", 3000),
+            ClientWork(8114, "1 ../../../TestDirectory/TestDirectory", 3000),
+            ClientWork(8114, "1 ../../../TestDirectory/TestDirectory", 3000));
         stopWatch.Stop();
         cancellationTokenSource.Cancel();
-        Assert.That(stopWatch.ElapsedMilliseconds, Is.LessThan(25000));
+        Assert.That(stopWatch.ElapsedMilliseconds, Is.LessThan(12000));
     }
 
-    private static async Task<string> ClientMoq(int port, string request)
+    private static async Task<string> ClientWork(int port, string request, int delay = 0)
     {
-        using var tcpClient = new TcpClient();
-        await tcpClient.ConnectAsync("localhost", port);
-        var stream = tcpClient.GetStream();
+        await Task.Delay(delay);
+        using var client = new TcpClient();
+        await client.ConnectAsync("localhost", port);
+        var stream = client.GetStream();
         var writer = new StreamWriter(stream);
         await writer.WriteAsync($"{request}\n");
         await writer.FlushAsync();
@@ -102,12 +102,5 @@ public class ServerTests
         var fileData = new char[dataLength];
         await streamReader.ReadAsync(fileData, 0, fileData.Length);
         return new string(fileData);
-    }
-
-    private async Task<string> ClientMoqWithFiveSecondsWaiting(int port)
-    {
-        var request = "1 ../../../TestDirectory/TestDirectory";
-        await Task.Delay(5000);
-        return await ClientMoq(port, request);
     }
 }

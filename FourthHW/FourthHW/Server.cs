@@ -5,31 +5,26 @@ using System.Net.Sockets;
 using System.Text;
 
 /// <summary>
-/// Implements network server entity.
+/// Server simulation using ftp protocol.
 /// </summary>
 public class Server
 {
     private int port;
     private CancellationToken cancellationToken;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Server"/> class.
-    /// </summary>
-    /// <param name="port">Network connection port number.</param>
-    /// <param name="cancellationToken">Server cancellatin token to suspend work.</param>
-    public Server(int port, CancellationToken cancellationToken)
+    public Server(int port, CancellationToken token)
     {
         this.port = port;
-        this.cancellationToken = cancellationToken;
+        this.cancellationToken = token;
     }
 
     /// <summary>
-    /// Starts the server.
+    /// Launch server work till cancellation isn't requested by client.
     /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task Start()
+    /// <returns></returns>
+    public async Task LaunchServer()
     {
-        var listener = new TcpListener(IPAddress.Any, this.port);
+        var listener = new TcpListener(IPAddress.Any, port);
         listener.Start();
         var serverTasks = new List<Task>();
         while (!this.cancellationToken.IsCancellationRequested)
@@ -40,7 +35,9 @@ public class Server
                 var stream = new NetworkStream(socket);
                 var reader = new StreamReader(stream);
                 var data = await reader.ReadLineAsync();
-                var response = data == null ? "-1\n" : GenerateResponse(data);
+                var response = (data == null || (data[0] != '1'
+                    && data[0] != '2')) ? "-1\n" : Response(data[0],
+                    data.Remove(0, 2));
                 var writer = new StreamWriter(stream);
                 await writer.WriteAsync(response);
                 await writer.FlushAsync();
@@ -52,73 +49,51 @@ public class Server
         await Task.WhenAll(serverTasks.ToArray());
     }
 
-    private static string GenerateResponseToList(string pathToDirectory)
+
+    private string Response(char option, string path)
     {
-        var response = new StringBuilder();
-        try
-        {
-            var subDirectories = Directory.GetDirectories(pathToDirectory);
-            var files = Directory.GetFiles(pathToDirectory);
-            response.Append((subDirectories.Length + files.Length).ToString());
-            foreach (var directory in subDirectories)
-            {
-                response.Append(' ');
-                response.Append($"{directory} true");
-            }
-
-            foreach (var file in files)
-            {
-                response.Append(' ');
-                response.Append($"{file} false");
-            }
-
-            response.Append("\n");
-            return response.ToString();
-        }
-        catch (DirectoryNotFoundException)
-        {
-            response.Clear();
-            response.Append("-1\n");
-            return response.ToString();
-        }
+        return (option == '1') ? ListResponse(path) : GetResponse(path);
     }
 
-    private static string GenerateResponseToGet(string pathToFile)
+
+    private string ListResponse(string path)
     {
+        if (!Directory.Exists(path))
+        {
+            return "-1";
+        }
+
+        var directories = Directory.GetDirectories(path);
+        var files = Directory.GetFiles(path);
+        var size = 0;
         var response = new StringBuilder();
-        try
+
+        for (var i = 0; i < directories.Length; ++i)
         {
-            if (!Path.HasExtension(pathToFile))
+            response.Append(directories[i].ToString() + " true");
+            size++;
+        }
+        for (var i = 0; i < files.Length; ++i)
+        {
+            if (files[i].Contains('~'))
             {
-                response.Append("-1\n");
-                return response.ToString();
+                continue;
             }
-
-            var fileContent = File.ReadAllBytes(pathToFile);
-            response.Append(fileContent.Length.ToString());
-            response.Append(' ');
-            response.AppendLine(Encoding.Default.GetString(fileContent));
-
-            response.Append("\n");
-            return response.ToString();
+            response.Append(files[i].ToString() + " false");
+            size++;
         }
-        catch (DirectoryNotFoundException)
-        {
-            response.Clear();
-            response.Append("-1\n");
-            return response.ToString();
-        }
+        return size.ToString() + response + "\n";
     }
 
-    private static string GenerateResponse(string requestData)
+    private string GetResponse(string path)
     {
-        var result = requestData[0] switch
+        if (!File.Exists(path))
         {
-            '1' => GenerateResponseToList(requestData.Remove(0, 2)),
-            '2' => GenerateResponseToGet(requestData.Remove(0, 2)),
-            _ => "Request number not found",
-        };
+            return "-1";
+        }
 
-        return result;
+        var bytes = File.ReadAllBytesAsync(path).Result;
+        var length = new FileInfo(path).Length;
+        return length.ToString() + " " + Encoding.Default.GetString(bytes) + "\n";
     }
 }

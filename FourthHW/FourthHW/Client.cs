@@ -5,9 +5,6 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 
-/// <summary>
-/// Implements network client entity.
-/// </summary>
 public class Client
 {
     private string host;
@@ -19,6 +16,13 @@ public class Client
         this.host = host;
     }
 
+    /// <summary>
+    /// Returns the number of entries in the direcory and their
+    /// names in format: size (<name: String> <isDir: Boolean>)*\n
+    /// If directory doesn't exist throws DirectoryNotFoundException.
+    /// </summary>
+    /// <param name="path">path to the directory to list entities</param>
+    /// <returns></returns>
     public async Task<(int size, List<(string, bool)>?)> List(string path)
     {
         using var client = new TcpClient();
@@ -40,6 +44,13 @@ public class Client
         }
     }
 
+    /// <summary>
+    /// Returns the size of the file and its content. If file doesn't exist throws
+    /// FileNotFoundException.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="output"></param>
+    /// <returns></returns>
     public async Task Get(string path, Stream output)
     {
         using var client = new TcpClient();
@@ -100,7 +111,7 @@ public class Client
         return (size, result);
     }
 
-    public async Task ReadGetResponse(Stream readStream, Stream writeStream)
+    private async Task ReadGetResponse(Stream readStream, Stream writeStream)
     {
         var reader = new StreamReader(readStream);
         var sizeString = new StringBuilder();

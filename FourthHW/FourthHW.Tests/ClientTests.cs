@@ -1,58 +1,68 @@
-﻿namespace SimpleFTPTests;
+﻿namespace FourthHW.Tests;
 
 using System.Net.Sockets;
 using System.Net;
-using static FourthHW.Client;
 using FourthHW;
 
 public class ClientTests
 {
     private CancellationTokenSource cancellationTokenSource;
 
-    private static string pathForTestListRequest = "../SimpleFTPTests/TestDirectory";
-    private static string testListResponse = "2 ../SimpleFTPTests/TestDirectory/NestedFolder true" +
-    " ../SimpleFTPTests/TestDirectory/Text.txt false\n";
+    private static string pathForList = "../FourthHW.Tests/TestDirectory";
+    private static string listResponse = "2 ../FourthHW.Tests/TestDirectory/TestDirectory true" +
+    " ../FourthHW.Tests/TestDirectory/TestFile1.txt false" + 
+    " ../FourthHW.Tests/TestDirectory/TestFile2.txt false\n";
 
-    private static string pathForTestGetRequest = "../../../TestDirectory/TextFirst.txt";
-    private static byte[] textFileBytes = File.ReadAllBytes("../../../TestDirectory/TextFirst.txt");
-    private static string testGetResponse = $"{textFileBytes.Length} {System.Text.Encoding.Default.GetString(textFileBytes)}\n";
+    private static string pathForGet = "../../../TestDirectory/TestFile1.txt";
+    private static byte[] fileBytes = File.ReadAllBytes("../../../TestDirectory/TestFile1.txt");
+    private static string testResponse = $"{fileBytes.Length} " +
+        $"{System.Text.Encoding.Default.GetString(fileBytes)}\n";
 
-    private static string pathForUnusualTestGetRequest = "../../../TestDirectory/NestedFolder/Text1.txt";
-    private static byte[] text1FileBytes = File.ReadAllBytes("../../../TestDirectory/NestedFolder/Text1.txt");
-    private static string unusualTestGetResponse = $"{text1FileBytes.Length} {System.Text.Encoding.Default.GetString(text1FileBytes)}\n";
+    private static string notExistingPath = "../FourthHW.Tests/TestDirectory/NotExistedDirectory";
 
-    private static string pathForIncorrectResponseTestListRequest = "../SimpleFTPTests/TestDirectory/NestedFolder11";
+    private static List<(string, bool)> correctResultList;
 
     [SetUp]
     public void Setup()
     {
         cancellationTokenSource = new CancellationTokenSource();
+        correctResultList = new List<(string, bool)>()
+        {
+            ("../FourthHW.Tests/TestDirectory/TestDirectory", true),
+            ("../FourthHW.Tests/TestDirectory/TestFile1.txt", false),
+            ("../FourthHW.Tests/TestDirectory/TestFile2.txt", false)
+        };
+        
     }
 
     [Test]
-    public async Task StandartListRequestTest()
+    public async Task ListTest()
     {
         var client = new Client(8888);
-        Task.Run(async () => await ServerStartMoq(8888, cancellationTokenSource.Token));
-        var result = await client.List(pathForTestListRequest);
+        await Task.Run(async () => await ServerWork(8888, cancellationTokenSource.Token));
+        var result = await client.List(pathForList);
         cancellationTokenSource.Cancel();
-        var expectedResult = new List<DirectoryElement>
+        Assert.That(result.Item2!.Count, Is.EqualTo(correctResultList.Count)); 
+        var comparison = new Comparison<(string, bool)>((itemFirst, itemSecond)
+            => itemFirst.Item1.CompareTo(itemSecond.Item1));
+        correctResultList.Sort(comparison);
+        result.Item2!.Sort(comparison);
+        for (var i = 0; i < correctResultList.Count; ++i)
         {
-            new DirectoryElement("../SimpleFTPTests/TestDirectory/NestedFolder", true),
-            new DirectoryElement("../SimpleFTPTests/TestDirectory/Text.txt", false)
-        };
-        Assert.That(CompareDirectoryElementLists(result, expectedResult), Is.EqualTo(0));
+            Assert.That(comparison(correctResultList[i], result.Item2[i]), Is.EqualTo(0));
+            Assert.That(correctResultList[i].Item2 == result.Item2[i].Item2);
+        }
     }
 
     [Test]
-    public async Task GetRequestTestWithEndOfLineCharacterInTheMiddle()
+    public async Task GetTest()
     {
         var client = new Client(8889);
-        Task.Run(async () => await ServerStartMoq(8889, cancellationTokenSource.Token));
+        await Task.Run(async () => await ServerWork(8889, cancellationTokenSource.Token));
         using var resultStream = new MemoryStream();
-        await client.Get(pathForUnusualTestGetRequest, resultStream);
+        await client.Get(pathForGet, resultStream);
         resultStream.Position = 0;
-        var expectedResult = System.Text.Encoding.Default.GetString(text1FileBytes);
+        var expectedResult = System.Text.Encoding.Default.GetString(fileBytes);
         var streamReader = new StreamReader(resultStream);
         var result = await streamReader.ReadToEndAsync();
         cancellationTokenSource.Cancel();
@@ -60,15 +70,15 @@ public class ClientTests
     }
 
     [Test]
-    public void IvalidPathInServerResponseTest()
+    public void IvalidPathTest()
     {
         var client = new Client(8890);
-        Task.Run(async () => await ServerStartMoq(8890, cancellationTokenSource.Token));
+        Task.Run(async () => await ServerWork(8890, cancellationTokenSource.Token));
         using var result = new MemoryStream();
-        Assert.ThrowsAsync<InvalidPathException>(() => client.List(pathForIncorrectResponseTestListRequest));
+        Assert.ThrowsAsync<DirectoryNotFoundException>(() => client.List(notExistingPath));
     }
 
-    private async Task ServerStartMoq(int port, CancellationToken cancellationToken)
+    private async Task ServerWork(int port, CancellationToken cancellationToken)
     {
         var listener = new TcpListener(IPAddress.Any, port);
         listener.Start();
@@ -80,7 +90,7 @@ public class ClientTests
                 var stream = new NetworkStream(socket);
                 var reader = new StreamReader(stream);
                 var data = await reader.ReadLineAsync();
-                var response = data == null ? "-1\n" : ServerGenerateResponseMoq(data);
+                var response = data == null ? "-1\n" : ServerResponse(data);
                 var writer = new StreamWriter(stream);
                 await writer.WriteAsync(response);
                 await writer.FlushAsync();
@@ -89,50 +99,19 @@ public class ClientTests
         }
     }
 
-    private static string ServerGenerateResponseMoq(string request)
+    private static string ServerResponse(string request)
     {
-        if (request == $"1 {pathForTestListRequest}")
+        if (request == $"1 {pathForList}")
         {
-            return testListResponse;
+            return listResponse;
         }
-        else if (request == $"2 {pathForTestGetRequest}")
+        else if (request == $"2 {pathForGet}")
         {
-            return testGetResponse;
-        }
-        else if (request == $"2 {pathForUnusualTestGetRequest}")
-        {
-            return unusualTestGetResponse;
+            return testResponse;
         }
         else
         {
             return "-1";
         }
     }
-
-    private static int CompareDirectoryElementLists(
-        List<DirectoryElement> firstCollection,
-        List<DirectoryElement> secondCollection)
-    {
-        if (firstCollection.Count != secondCollection.Count)
-        {
-            return -1;
-        }
-
-        var comparasion = new Comparison<DirectoryElement>((firstDirectoryElement, secondDirectoryElement)
-            => string.Compare(firstDirectoryElement.Name, secondDirectoryElement.Name));
-        firstCollection.Sort(comparasion);
-        secondCollection.Sort(comparasion);
-        for (var i = 0; i < firstCollection.Count; ++i)
-        {
-            if (!CompareDirectoryElements(firstCollection[i], secondCollection[i]))
-            {
-                return -1;
-            }
-        }
-
-        return 0;
-    }
-    private static bool CompareDirectoryElements(DirectoryElement firstDirectoryElement, DirectoryElement secondDirectoryElement)
-        => firstDirectoryElement.Name == secondDirectoryElement.Name
-            && firstDirectoryElement.IsDirectory == secondDirectoryElement.IsDirectory;
 }
