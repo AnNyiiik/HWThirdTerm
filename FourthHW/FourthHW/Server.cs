@@ -1,78 +1,69 @@
-﻿namespace FourthHW;
+﻿using System.Net;
+using System.Net.Sockets;
+using System.Text;
+namespace FourthHW;
 
 public class Server
 {
-	
-	private bool[] ports;
-	private string rootDirectoryName;
+    private int port;
+    private CancellationToken cancellationToken;
 
-	public string PathToRootDirectory { get; }
-
-	public Server(int numberOfPorts, string pathToRootDirectory)
+    public Server(int port, CancellationToken token)
 	{
-		ports = new bool[numberOfPorts];
-		this.rootDirectoryName = pathToRootDirectory;
-		PathToRootDirectory = pathToRootDirectory;
+		this.port = port;
+		this.cancellationToken = token;
 	}
 
-    private bool isDirectory(string path)
-	{
-		return Directory.Exists(Directory.GetDirectoryRoot(rootDirectoryName)[1..] + rootDirectoryName + path) ||
-		Directory.Exists(Directory.GetDirectoryRoot(path)[1..] + path);
+    public async Task LaunchServer()
+    {
+        var listener = new TcpListener(IPAddress.Any, port);
+        listener.Start();
+        var serverTasks = new List<Task>();
+        while (!this.cancellationToken.IsCancellationRequested)
+        {
+            var socket = await listener.AcceptSocketAsync(this.cancellationToken);
+            var task = Task.Run(async () =>
+            {
+                var stream = new NetworkStream(socket);
+                var reader = new StreamReader(stream);
+                var data = await reader.ReadLineAsync();
+                var response = (data == null || (data[0] != '1'
+                    && data[0] != '2')) ? "-1\n" : Response(data[0],
+                    data.Remove(0, 2));
+                var writer = new StreamWriter(stream);
+                await writer.WriteAsync(response);
+                await writer.FlushAsync();
+                socket.Close();
+            });
+            serverTasks.Add(task);
+        }
+
+        await Task.WhenAll(serverTasks.ToArray());
     }
+
+
+    private string Response(char option, string path)
+    {
+        return (option == '1') ? ListResponse(path) : GetResponse(path);
+    }
+
         
-    public int GetPort(int port)
-    {
-        if (port > ports.Length || port < 0)
-        {
-            throw new ArgumentException();
-        } else if (ports[port])
-        {
-            return -1;
-        }
-
-        ports[port] = true;
-        return port;
-    }
-
-    public void ReturnPort(int i)
-    {
-        if (i > ports.Length || i < 0)
-        {
-            throw new ArgumentException();
-        }
-
-        ports[i] = false;
-    }
-
-
-    public (int, List<(string, bool)>?) List(string path)
+    private string ListResponse(string path)
 	{
-		if (!isDirectory(path))
+		if (!Directory.Exists(path))
 		{
-			return (-1, null);
+			return "-1";
 		}
 
-		var directories = Directory.Exists(Directory.
-			GetDirectoryRoot(path)[1..] + path)
-            ? Directory.GetDirectories(Directory.
-			GetDirectoryRoot(path)[1..] + path)
-            : Directory.GetDirectories(Directory.
-			GetDirectoryRoot(rootDirectoryName)[1..]
-			+ rootDirectoryName + path);
+		var directories = Directory.GetDirectories(path);
+        var files = Directory.GetFiles(path);
+        var size = 0;
+		var response = new StringBuilder();
 
-        var files = Directory.Exists(Directory.
-            GetDirectoryRoot(path)[1..] + path)
-            ? Directory.GetFiles(Directory.
-            GetDirectoryRoot(path)[1..] + path)
-            : Directory.GetFiles(Directory.
-            GetDirectoryRoot(rootDirectoryName)[1..]
-            + rootDirectoryName + path);
-
-		var list = new List<(string, bool)>();
 		for (var i = 0; i < directories.Length; ++i)
 		{
-			list.Add((directories[i], true));
+			response.Append(directories[i].ToString() + " true");
+            size++;
 		}
         for (var i = 0; i < files.Length; ++i)
         {
@@ -80,33 +71,21 @@ public class Server
             {
                 continue;
             }
-            list.Add((files[i], false));
+            response.Append(files[i].ToString() + " false");
+            size++;
         }
-        var size = list.Count;
-		return (size, list);
+		return size.ToString() + response + "\n";
     }
 
-    public (long, byte[]?) Get(string path)
+    private string GetResponse(string path)
     {
-        if (isDirectory(path))
+        if (!File.Exists(path))
         {
-            return (-1, null);
+            return "-1";
         }
-
-        if (!File.Exists(Directory.GetDirectoryRoot(rootDirectoryName)[1..]
-            + rootDirectoryName + path) &&
-            !File.Exists(Directory.GetDirectoryRoot(path)[1..] + path))
-        {
-            return (-1, null);
-        }
-
-        path = File.Exists(Directory.GetDirectoryRoot(rootDirectoryName)[1..]
-            + rootDirectoryName + path) ? Directory.
-            GetDirectoryRoot(rootDirectoryName)[1..] + rootDirectoryName + path
-            : Directory.GetDirectoryRoot(path)[1..] + path;
 
         var bytes = File.ReadAllBytesAsync(path).Result;
         var length = new FileInfo(path).Length;
-        return (length, bytes);
+        return length.ToString() +  " " + Encoding.Default.GetString(bytes) + "\n";
     }
 }

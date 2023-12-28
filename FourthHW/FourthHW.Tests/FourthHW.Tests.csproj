@@ -30,4 +30,9 @@
   <ItemGroup>
     <ProjectReference Include="..\FourthHW\FourthHW.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="TestDirectory\TestFile1.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

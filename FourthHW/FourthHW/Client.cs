@@ -1,69 +1,137 @@
-﻿namespace FourthHW;
+﻿using System.Text;
+using System.Net.Sockets;
+
+namespace FourthHW;
 
 public class Client
 {
-    private Server? currentServer;
+    private string host;
     private int port;
 
-    public bool GetServer(Server server, int port)
+    public Client(int port, string host = "localhost")
     {
-        var returnedPort = server.GetPort(port);
-        if (returnedPort != -1)
-        {
-            currentServer = server;
-            this.port = port;
-        }
-        return returnedPort != -1;
+        this.port = port;
+        this.host = host;
     }
 
-    public void LeaveServer()
+    public async Task<(int size, List<(string, bool)>?)> List(string path)
     {
-        currentServer?.ReturnPort(port);
-        currentServer = null;
+        using var client = new TcpClient();
+        await client.ConnectAsync(host, port);
+        var stream = client.GetStream();
+        var writer = new StreamWriter(stream);
+        await writer.WriteAsync($"1 {path}\n");
+        await writer.FlushAsync();
+        var reader = new StreamReader(stream);
+        try
+        {
+            var data = await ReadListResponce(reader);
+            return data;
+        }
+        catch (Exception exception)
+        {
+            throw Equals(exception.GetType(), typeof(ArgumentException)) ?
+                new DirectoryNotFoundException() : new ServerResponseException();
+        }
     }
 
-    public (int size, List<(string, bool)>?) List(Server server, int port, string path)
+    public async Task Get(string path, Stream output)
     {
-        if (currentServer == null)
+        using var client = new TcpClient();
+        await client.ConnectAsync("localhost", port);
+        var stream = client.GetStream();
+        var writer = new StreamWriter(stream);
+        await writer.WriteAsync($"2 {path}\n");
+        await writer.FlushAsync();
+        var reader = new StreamReader(stream);
+        try
         {
-            currentServer = server;
-            this.port = port;
+            await ReadGetResponse(stream, output);
+            output.Position = 0;
         }
-        if (server != currentServer && port != this.port)
+        catch (Exception exception)
         {
-            LeaveServer();
-            GetServer(server, port);
+            throw Equals(exception.GetType(), typeof(ArgumentException)) ?
+                new FileNotFoundException() : new ServerResponseException();
+        }
+    }
+
+    private async Task<(int, List<(string, bool)>)> ReadListResponce(StreamReader reader)
+    {
+        var result = new List<(string, bool)>();
+        var data = await reader.ReadLineAsync();
+        if (data == null)
+        {
+            throw new InvalidDataException();
         }
 
-        if (currentServer != null && port != -1)
+        var dataItems = data.Split();
+        var isNumber = Int32.TryParse(dataItems[0], out var size);
+        if (!isNumber)
         {
-            return currentServer.List(path);
-        } else
+            throw new InvalidDataException();
+        }
+        if (size == -1)
         {
             throw new ArgumentException();
         }
+        for (var i = 1; i < dataItems.Length - 1; i += 2)
+        {
+            var isFile = dataItems[i + 1].Equals("false") ? true : false;
+            var isDirectory = dataItems[i + 1].Equals("true") ? true : false;
+            if (!isFile && !isDirectory)
+            {
+                throw new ArgumentException();
+            }
+            if (isDirectory)
+            {
+                result.Add((dataItems[i], true));
+            }
+            else
+            {
+                result.Add((dataItems[i], false));
+            }
+        }
+        return (size, result);
     }
 
-    public (long size, byte[]? bytes) Get(Server server, int port, string path)
+    public async Task ReadGetResponse(Stream readStream, Stream writeStream)
     {
-        if (currentServer == null)
+        var reader = new StreamReader(readStream);
+        var sizeString = new StringBuilder();
+        var character = new char[0];
+        await reader.ReadAsync(character, 0, 1);
+        while (character[0] != ' ')
         {
-            currentServer = server;
-            this.port = port;
-        }
-        if (server != currentServer && port != this.port)
-        {
-            LeaveServer();
-            GetServer(server, port);
+            sizeString.Append(character[0]);
+            await reader.ReadAsync(character, 0, 1);
         }
 
-        if (currentServer != null && port != -1)
-        {
-            return currentServer.Get(path);
-        }
-        else
+        var size = Int32.Parse(sizeString.ToString());
+        if (size == -1)
         {
             throw new ArgumentException();
+        }
+
+        var writer = new StreamWriter(writeStream);
+        while(!reader.EndOfStream)
+        {
+            var data = new char[8];
+            if (writeStream.Position + 8 > size)
+            {
+                var bytesRead = await reader.ReadAsync(data, 0, size -
+                    (int)writeStream.Position);
+                writer.Write(data, 0, bytesRead);
+                writer.Flush();
+                return;
+            }
+            else
+            {
+                var bytesRead = await reader.ReadAsync(data, 0, data.Length);
+                writer.Write(data, 0, bytesRead);
+            }
+
+            writer.Flush();
         }
     }
 }
