@@ -10,172 +10,133 @@ using System.Text;
 /// </summary>
 public class Client
 {
-    private int port;
     private string host;
+    private int port;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Client"/> class.
-    /// </summary>
-    /// <param name="port">Network connection port number.</param>
-    public Client(int port)
-        : this(port, "localhost")
-    {
-    }
-
-    public Client(int port, string host)
+    public Client(int port, string host = "localhost")
     {
         this.port = port;
         this.host = host;
     }
 
-    /// <summary>
-    /// Initiates a List request.
-    /// </summary>
-    /// <param name="path">The path to the directory where List request will be executed by the server.</param>
-    /// <returns>Collection of DirectoryElements in the requested catalog.</returns>
-    public async Task<List<DirectoryElement>> List(string path)
+    public async Task<(int size, List<(string, bool)>?)> List(string path)
     {
-        using var tcpClient = new TcpClient();
-        await tcpClient.ConnectAsync(this.host, this.port);
-        var stream = tcpClient.GetStream();
+        using var client = new TcpClient();
+        await client.ConnectAsync(host, port);
+        var stream = client.GetStream();
         var writer = new StreamWriter(stream);
         await writer.WriteAsync($"1 {path}\n");
         await writer.FlushAsync();
         var reader = new StreamReader(stream);
         try
         {
-            var data = await ReadListRequestData(reader);
+            var data = await ReadListResponce(reader);
             return data;
         }
         catch (Exception exception)
         {
             throw Equals(exception.GetType(), typeof(ArgumentException)) ?
-                new InvalidPathException() : new InvalidServerResponseException();
+                new DirectoryNotFoundException() : new ServerResponseException();
         }
     }
 
-    /// <summary>
-    /// Initiates a Get request.
-    /// </summary>
-    /// <param name="pathToFile">The path to the file that will be processed by the server.</param>
-    /// <param name="outputStream">The stream with file data.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task Get(string pathToFile, Stream outputStream)
+    public async Task Get(string path, Stream output)
     {
-        using var tcpClient = new TcpClient();
-        await tcpClient.ConnectAsync("localhost", this.port);
-        var stream = tcpClient.GetStream();
+        using var client = new TcpClient();
+        await client.ConnectAsync("localhost", port);
+        var stream = client.GetStream();
         var writer = new StreamWriter(stream);
-        await writer.WriteAsync($"2 {pathToFile}\n");
+        await writer.WriteAsync($"2 {path}\n");
         await writer.FlushAsync();
         var reader = new StreamReader(stream);
         try
         {
-            await ReadGetRequestData(stream, outputStream);
-            outputStream.Position = 0;
+            await ReadGetResponse(stream, output);
+            output.Position = 0;
         }
         catch (Exception exception)
         {
             throw Equals(exception.GetType(), typeof(ArgumentException)) ?
-                new InvalidPathException() : new InvalidServerResponseException();
+                new FileNotFoundException() : new ServerResponseException();
         }
     }
 
-    private static async Task<List<DirectoryElement>> ReadListRequestData(StreamReader streamReader)
+    private async Task<(int, List<(string, bool)>)> ReadListResponce(StreamReader reader)
     {
-        var result = new List<DirectoryElement>();
-        var data = await streamReader.ReadLineAsync();
-        Console.WriteLine(data);
+        var result = new List<(string, bool)>();
+        var data = await reader.ReadLineAsync();
         if (data == null)
         {
             throw new InvalidDataException();
         }
 
-        var dataArray = data.Split();
-        var dataLength = int.Parse(dataArray[0]);
-        if (dataLength == -1)
+        var dataItems = data.Split();
+        var isNumber = Int32.TryParse(dataItems[0], out var size);
+        if (!isNumber)
+        {
+            throw new InvalidDataException();
+        }
+        if (size == -1)
         {
             throw new ArgumentException();
         }
-
-        for (var i = 1; i < dataLength * 2; i += 2)
+        for (var i = 1; i < dataItems.Length - 1; i += 2)
         {
-            var boolValue = dataArray[i + 1] switch
+            var isFile = dataItems[i + 1].Equals("false") ? true : false;
+            var isDirectory = dataItems[i + 1].Equals("true") ? true : false;
+            if (!isFile && !isDirectory)
             {
-                "true" => true,
-                "false" => false,
-                _ => throw new InvalidDataException(),
-            };
-            var newElement = new DirectoryElement(dataArray[i], boolValue);
-            result.Add(newElement);
+                throw new ArgumentException();
+            }
+            if (isDirectory)
+            {
+                result.Add((dataItems[i], true));
+            }
+            else
+            {
+                result.Add((dataItems[i], false));
+            }
         }
-
-        return result;
+        return (size, result);
     }
 
-    private static async Task ReadGetRequestData(Stream sourceStream, Stream outputStream)
+    public async Task ReadGetResponse(Stream readStream, Stream writeStream)
     {
-        var currentSymbol = new char[1];
-        var streamReader = new StreamReader(sourceStream);
-        await streamReader.ReadAsync(currentSymbol, 0, 1);
-        var data = new StringBuilder();
-        while (currentSymbol[0] != ' ' && currentSymbol[0] != '\n')
+        var reader = new StreamReader(readStream);
+        var sizeString = new StringBuilder();
+        var character = new char[0];
+        await reader.ReadAsync(character, 0, 1);
+        while (character[0] != ' ')
         {
-            data.Append(currentSymbol);
-            await streamReader.ReadAsync(currentSymbol, 0, 1);
+            sizeString.Append(character[0]);
+            await reader.ReadAsync(character, 0, 1);
         }
 
-        var dataLength = int.Parse(data.ToString());
-        if (dataLength == -1)
+        var size = Int32.Parse(sizeString.ToString());
+        if (size == -1)
         {
             throw new ArgumentException();
         }
 
-        var streamWriter = new StreamWriter(outputStream);
-        while (!streamReader.EndOfStream)
+        var writer = new StreamWriter(writeStream);
+        while (!reader.EndOfStream)
         {
-            var buffer = new char[8];
-            if (outputStream.Position + 8 > dataLength)
+            var data = new char[8];
+            if (writeStream.Position + 8 > size)
             {
-                var bytesRead = await streamReader.ReadAsync(buffer, 0, dataLength - (int)outputStream.Position);
-                streamWriter.Write(buffer, 0, bytesRead);
-                streamWriter.Flush();
+                var bytesRead = await reader.ReadAsync(data, 0, size -
+                    (int)writeStream.Position);
+                writer.Write(data, 0, bytesRead);
+                writer.Flush();
                 return;
             }
             else
             {
-                var bytesRead = await streamReader.ReadAsync(buffer, 0, buffer.Length);
-                streamWriter.Write(buffer, 0, bytesRead);
+                var bytesRead = await reader.ReadAsync(data, 0, data.Length);
+                writer.Write(data, 0, bytesRead);
             }
 
-            streamWriter.Flush();
+            writer.Flush();
         }
-    }
-
-    /// <summary>
-    /// Implements file or catalog entity.
-    /// </summary>
-    public struct DirectoryElement
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DirectoryElement"/> struct.
-        /// </summary>
-        /// <param name="name">Catalog element name.</param>
-        /// <param name="isDirectory">Shows it is the directory or the file.</param>
-        public DirectoryElement(string name, bool isDirectory)
-        {
-            this.Name = name;
-            this.IsDirectory = isDirectory;
-        }
-
-        /// <summary>
-        /// Gets the directory element name.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// Gets a value indicating whether it is a directory.
-        /// </summary>
-        public bool IsDirectory { get; }
     }
 }
