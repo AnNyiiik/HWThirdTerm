@@ -17,13 +17,13 @@ public class MyNUnitTest
 	/// <param name="obj">test method object</param>
 	public MyNUnitTest(MethodInfo methodInfo, Object obj)
 	{
-		this.methodInfo = methodInfo;
-		var attribute = methodInfo.GetCustomAttribute(typeof(MyTestAttribute));
-		isIgnored = ((MyTestAttribute)attribute!).ReasonForIgnore != null;
+        this.methodInfo = methodInfo;
+        var attribute = methodInfo.GetCustomAttribute(typeof(MyTestAttribute));
+        isIgnored = ((MyTestAttribute)attribute!).ReasonForIgnore != null;
         whyIsIgnored = isIgnored ? ((MyTestAttribute)attribute!).
-			ReasonForIgnore! : string.Empty;
+            ReasonForIgnore! : string.Empty;
         typeOfExpectedException = ((MyTestAttribute)attribute!)
-			.TypeOfExpectedException;
+            .TypeOfExpectedException;
         this.classObject = obj;
     }
 

@@ -10,11 +10,11 @@ public class MyNUnitTestElement
 	
 	public MyNUnitTestElement(Type type, MethodInfo method)
 	{
-		this.type = type;
-		this.method = method;
-	}
+        this.type = type;
+        this.method = method;
+    }
 
-        public Type type { get; private set; }
+    public Type type { get; private set; }
 
 	public MethodInfo method { get; private set; }
 
@@ -29,12 +29,12 @@ public class MyNUnitTestElement
 			if (type == typeof(BeforeClassAttribute) || type ==
 				typeof(BeforeAttribute))
 			{
-                    method.Invoke(null, new object[] { });
+                method.Invoke(null, new object[] { });
 				return;
-                }
-                method.Invoke(classObject, new object[] { });
-            } catch 
-		{
+            }
+            method.Invoke(classObject, new object[] { });
+        } catch 
+	    {
 			return;
 		}
 	}

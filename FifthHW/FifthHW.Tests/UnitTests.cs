@@ -1,5 +1,4 @@
 ﻿namespace FifthHW.Tests;
-using FifthHW;
 
 public class Tests
 {
