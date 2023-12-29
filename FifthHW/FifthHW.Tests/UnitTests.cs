@@ -4,10 +4,10 @@ using FifthHW;
 public class Tests
 {
     private static string pathToIncorrectTestMethodsDll =
-        "../../../../IncorrectTestMethodsProject/bin/Debug/net7.0";
+        "../../../../IncorrectTestMethodsProject/bin/Debug/net7.0/IncorrectTestMethodsProject.dll";
 
     private static string pathToTestProjectDll =
-        "../../../../TestProjectFirst/bin/Debug/net7.0";
+        "../../../../TestProject/bin/Debug/net7.0/TestProject.dll";
 
     [Test]
     public void IncorrectTestMethodsTest()
@@ -108,6 +108,7 @@ public class Tests
         var stringComparator = new Comparison<String>((first, second) =>
             String.Compare(first, second));
         expected.IncorrectTestNames.Sort(stringComparator);
+        actual.IncorrectTestNames.Sort(stringComparator);
         for (var i = 0; i < expected.IncorrectTestNames.Count; ++i)
         {
             if (stringComparator(expected.IncorrectTestNames[i],
@@ -117,6 +118,7 @@ public class Tests
             }
         }
         expected.IncorrectTestElementsNames.Sort(stringComparator);
+        actual.IncorrectTestElementsNames.Sort(stringComparator);
         for (var i = 0; i < expected.IncorrectTestNames.Count; ++i)
         {
             if (stringComparator(expected.IncorrectTestElementsNames[i],

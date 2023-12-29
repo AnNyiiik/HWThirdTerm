@@ -8,65 +8,66 @@ public class MyNUnitTestLauncher
 
     private static ConcurrentBag<TestClassOutput> testClassOutputs =
         new ConcurrentBag<TestClassOutput>();
-	
-    public static List<TestClassOutput> RunAllTests(string path)
+
+    /// <summary>
+    /// launches all the tests in the given assemply .dll path, performes all before and after elements.
+    /// </summary>
+    /// <param name="assembly">Path to assemply to test</param>
+    /// <returns>cref="TestClassOutput"</returns>
+    public static List<TestClassOutput> RunAllTests(string assembly)
 	{
-        var assemblies = Directory.EnumerateFiles(path, "*.dll");
-        Parallel.ForEach(assemblies,
-            (assembly) =>
+        var classes = Assembly.LoadFrom(assembly).ExportedTypes
+                            .Where(t => t.IsClass);
+        Parallel.ForEach(classes, (classItem) =>
+        {
+            var constructorInfo = classItem.GetConstructor(Type.EmptyTypes);
+            var methods = classItem.GetTypeInfo().DeclaredMethods;
+
+            var beforeClass = ExtractTestAndIncorrectTestElements(methods,
+                typeof(BeforeClassAttribute));
+            var before = ExtractTestAndIncorrectTestElements(methods,
+                typeof(BeforeAttribute));
+            var after = ExtractTestAndIncorrectTestElements(methods,
+                typeof(AfterAttribute));
+            var afterClass = ExtractTestAndIncorrectTestElements(methods,
+                typeof(AfterClassAttribute));
+            var tests = ExtractTestsAndIncorrectTestNames(methods,
+                constructorInfo);
+
+            foreach (var methodBeforeClass in beforeClass.Item1)
             {
-                var classes = Assembly.LoadFrom(assembly).ExportedTypes
-                                   .Where(t => t.IsClass);
-                Parallel.ForEach(classes, (classItem) =>
+                methodBeforeClass.RunMethod(null);
+            }
+
+            var testResults = new ConcurrentBag<TestOutput>();
+            Parallel.ForEach(tests.Item1, (test) =>
+            {
+                foreach(var beforeMethod in before.Item1)
                 {
-                    var constructorInfo = classItem.GetConstructor(Type.EmptyTypes);
-                    var methods = classItem.GetTypeInfo().DeclaredMethods;
+                    beforeMethod.RunMethod(test.classObject);
+                }
+                testResults.Add(test.PerformeTest());
+                foreach(var afterMethod in after.Item1)
+                {
+                    afterMethod.RunMethod(test.classObject);
+                }
+                foreach(var afterClassMethod in afterClass.Item1)
+                {
+                    afterClassMethod.RunMethod(null);
+                }
+            });
 
-                    var beforeClass = ExtractTestAndIncorrectTestElements(methods,
-                        typeof(BeforeClassAttribute));
-                    var before = ExtractTestAndIncorrectTestElements(methods,
-                        typeof(BeforeAttribute));
-                    var after = ExtractTestAndIncorrectTestElements(methods,
-                        typeof(AfterAttribute));
-                    var afterClass = ExtractTestAndIncorrectTestElements(methods,
-                        typeof(AfterClassAttribute));
-                    var tests = ExtractTestsAndIncorrectTestNames(methods,
-                        constructorInfo);
-
-                    foreach (var methodBeforeClass in beforeClass.Item1)
-                    {
-                        methodBeforeClass.RunMethod(null);
-                    }
-
-                    var testResults = new ConcurrentBag<TestOutput>();
-                    Parallel.ForEach(tests.Item1, (test) =>
-                    {
-                        foreach(var beforeMethod in before.Item1)
-                        {
-                            beforeMethod.RunMethod(test.classObject);
-                        }
-                        testResults.Add(test.PerformeTest());
-                        foreach(var afterMethod in after.Item1)
-                        {
-                            afterMethod.RunMethod(test.classObject);
-                        }
-                        foreach(var afterClassMethod in afterClass.Item1)
-                        {
-                            afterClassMethod.RunMethod(null);
-                        }
-                    });
-
-                    var incorrectTestElementsNames = new List<string>();
-                    incorrectTestElementsNames.AddRange(beforeClass.Item2);
-                    incorrectTestElementsNames.AddRange(before.Item2);
-                    incorrectTestElementsNames.AddRange(after.Item2);
-                    incorrectTestElementsNames.AddRange(afterClass.Item2);
-                    var testClassOutput = new TestClassOutput(classItem.Name,
-                        incorrectTestElementsNames, tests.Item2,
-                        testResults.ToList());
-                    testClassOutputs.Add(testClassOutput);
-                });
+            var incorrectTestElementsNames = new List<string>();
+            incorrectTestElementsNames.AddRange(beforeClass.Item2);
+            incorrectTestElementsNames.AddRange(before.Item2);
+            incorrectTestElementsNames.AddRange(after.Item2);
+            incorrectTestElementsNames.AddRange(afterClass.Item2);
+            var testClassOutput = new TestClassOutput(classItem.Name,
+                incorrectTestElementsNames, tests.Item2,
+                testResults.ToList());
+            testClassOutputs.Add(testClassOutput);
         });
+        
 
         return testClassOutputs.ToList();
     }
@@ -123,15 +124,15 @@ public class MyNUnitTestLauncher
             if (method.GetParameters().Length == 0
             && method.ReturnType == typeof(void))
             {
-                if (type == typeof(AfterClassAttribute) ||
-                type == typeof(BeforeClassAttribute))
+                if (type == typeof(AfterAttribute) ||
+                type == typeof(BeforeAttribute))
                 {
                     testElements.Add(new MyNUnitTestElement(type, method));
                 }
                 else 
                 {
-                    if (method.IsStatic && (type == typeof(AfterAttribute) ||
-                        type == typeof(BeforeAttribute)))
+                    if (method.IsStatic && (type == typeof(AfterClassAttribute) ||
+                        type == typeof(BeforeClassAttribute)))
                     {
                         testElements.Add(new MyNUnitTestElement(type, method));
                     } else
@@ -162,6 +163,11 @@ public class MyNUnitTestLauncher
         return count;
     }
 
+    /// <summary>
+    /// Print all the execution data.
+    /// </summary>
+    /// <param name="writer"></param>
+    /// <param name="testClassesOutputs"></param>
     public static void WriteTestExecutionResults(TextWriter writer,
         List<TestClassOutput> testClassesOutputs)
     {

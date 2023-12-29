@@ -10,6 +10,11 @@ public class MyNUnitTest
 	private readonly MethodInfo methodInfo;
 	public readonly Object classObject;
 
+	/// <summary>
+	/// Initializes a new instance of MyNUnitTest.
+	/// </summary>
+	/// <param name="methodInfo">info about test method</param>
+	/// <param name="obj">test method object</param>
 	public MyNUnitTest(MethodInfo methodInfo, Object obj)
 	{
 		this.methodInfo = methodInfo;
@@ -29,6 +34,10 @@ public class MyNUnitTest
 		ignored
 	}
 
+	/// <summary>
+	/// Execute test method.
+	/// </summary>
+	/// <returns>cref="TestOutput" object</returns>
 	public TestOutput PerformeTest()
 	{
 		if (isIgnored)

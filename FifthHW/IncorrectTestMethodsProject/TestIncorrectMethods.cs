@@ -33,7 +33,7 @@ public class TestIncorrectMethods
 
     }
 
-    [BeforeClass]
+    [AfterClass]
     public void AfterClassNotStatic()
     {
 

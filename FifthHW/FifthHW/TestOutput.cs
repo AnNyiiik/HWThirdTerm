@@ -3,6 +3,9 @@ using static FifthHW.MyNUnitTest;
 
 namespace FifthHW;
 
+/// <summary>
+/// Class for describing test execution data.
+/// </summary>
 public class TestOutput
 {
     public TestOutput(TestStatuses status, string? message, string? name)

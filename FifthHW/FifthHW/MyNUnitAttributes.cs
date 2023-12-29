@@ -1,6 +1,9 @@
 ﻿using System;
 namespace FifthHW;
 
+/// <summary>
+/// Attribute for test method.
+/// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class MyTestAttribute : Attribute
 {
@@ -21,6 +24,9 @@ public class MyTestAttribute : Attribute
     public Type? TypeOfExpectedException { get; }
 }
 
+/// <summary>
+/// Attribute for BeforeClass method.
+/// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class BeforeClassAttribute : Attribute
 {
@@ -30,6 +36,9 @@ public class BeforeClassAttribute : Attribute
     }
 }
 
+/// <summary>
+/// Attribute for AfterClass method.
+/// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class AfterClassAttribute : Attribute
 {
@@ -39,6 +48,9 @@ public class AfterClassAttribute : Attribute
     }
 }
 
+/// <summary>
+/// Attribute for Before method.
+/// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class BeforeAttribute : Attribute
 {
@@ -48,6 +60,9 @@ public class BeforeAttribute : Attribute
     }
 }
 
+/// <summary>
+/// Attribute for After method.
+/// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class AfterAttribute : Attribute
 {

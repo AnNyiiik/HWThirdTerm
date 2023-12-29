@@ -1,6 +1,9 @@
 ﻿using System;
 namespace FifthHW;
 
+/// <summary>
+/// Class for all test methods execution data in class.
+/// </summary>
 public class TestClassOutput
 {
     public TestClassOutput(string className,
