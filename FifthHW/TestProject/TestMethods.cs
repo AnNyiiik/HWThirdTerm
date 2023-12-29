@@ -1,5 +1,5 @@
 ﻿namespace TestProjectFirst;
-using FifthHW.MyNUnitAttributes;
+using FifthHW;
 
 
 public class TestMethods
