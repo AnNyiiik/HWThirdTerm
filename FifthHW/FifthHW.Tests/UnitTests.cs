@@ -4,10 +4,10 @@ using FifthHW;
 public class Tests
 {
     private static string pathToIncorrectTestMethodsDll =
-        "/Users/annnikolaeff/HWThirdTerm/FifthHW/IncorrectTestMethodsProject/bin/Debug/net7.0";
+        "../../../../IncorrectTestMethodsProject/bin/Debug/net7.0";
 
     private static string pathToTestProjectDll =
-        "../../../TestProjectFirst/bin/Debug/net7.0";
+        "../../../../TestProjectFirst/bin/Debug/net7.0";
 
     [Test]
     public void IncorrectTestMethodsTest()
