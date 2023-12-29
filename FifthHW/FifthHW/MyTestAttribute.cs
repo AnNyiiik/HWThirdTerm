@@ -11,8 +11,6 @@ public class MyTestAttribute : Attribute
     public MyTestAttribute(string? reasonForIgnore = null,
         Type? typeOfExpectedException = null)
     {
-        this.ReasonForIgnore = reasonForIgnore;
-        this.TypeOfExpectedException = typeOfExpectedException;
         ReasonForIgnore = reasonForIgnore;
         TypeOfExpectedException = typeOfExpectedException;
     }
