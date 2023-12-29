@@ -93,7 +93,6 @@ public class Tests
             });
         }
         myThreadPool.ShutDown();
-        Thread.Sleep(100);
         Assert.That(myThreadPool.IsTerminated, Is.EqualTo(true));
         Assert.Throws<InvalidOperationException>(() => myThreadPool
             .AddTask<int>(() => 0));

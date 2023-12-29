@@ -10,7 +10,6 @@ using System.Threading;
 public class MyThreadPool
 {
     private int maxTimeForCompleteJointPerThread;
-    private ConcurrentQueue<Action> tasks;
     private Thread[] threads;
     private CancellationTokenSource cancellationTokenSource;
     private AutoResetEvent newTaskIsAwaiting;
@@ -31,7 +30,7 @@ public class MyThreadPool
         }
 
         this.isWorking = new bool[numberOfThreads];
-        this.tasks = new ConcurrentQueue<Action>();
+        this.Tasks = new ConcurrentQueue<Action>();
         this.threads = new Thread[numberOfThreads];
         this.cancellationTokenSource = new CancellationTokenSource();
         this.newTaskIsAwaiting = new AutoResetEvent(false);
@@ -43,10 +42,12 @@ public class MyThreadPool
         Start();
     }
 
+    public ConcurrentQueue<Action> Tasks { get; private set; }
+
     /// <summary>
     /// Returns a number of threads, which calculates task at the current moment.
     /// </summary>
-    public int WorkingThreads { get => workingThreads; }
+    public int WorkingThreads { get; private set; }
 
     /// <summary>
     /// Indicates if the thread pool is active or not (ShutDown was requested).
@@ -68,9 +69,9 @@ public class MyThreadPool
                         break;
                     }
 
-                    lock (tasks)
+                    lock (Tasks)
                     {
-                        if (tasks.Count > 0)
+                        if (Tasks.Count > 0)
                         {
                             areAnyTasksInQueue.Set();
                         }
@@ -80,23 +81,25 @@ public class MyThreadPool
                         }
                     }
 
-                    if (!tasks.IsEmpty)
+                    if (!Tasks.IsEmpty)
                     {
-                        var isAvailable = tasks.TryDequeue(out var action);
+                        var isAvailable = Tasks.TryDequeue(out var action);
                         if (isAvailable && action != null)
                         {
                             Interlocked.Increment(ref workingThreads);
+                            WorkingThreads = workingThreads;
                             isWorking[localI] = true;
                             action.Invoke();
                             isWorking[localI] = false;
                             Interlocked.Decrement(ref workingThreads);
+                            WorkingThreads = workingThreads;
                             action = null;
                         }
                     }
 
-                    lock (tasks)
+                    lock (Tasks)
                     {
-                        if (tasks.Count > 0)
+                        if (Tasks.Count > 0)
                         {
                             areAnyTasksInQueue.Set();
                         }
@@ -130,9 +133,9 @@ public class MyThreadPool
 
             var myTask = isUpperTaskCompleted == null ? new MyTask<T1>(function, this)
                 : new MyTask<T1>(function, this, isUpperTaskCompleted);
-            lock (this.tasks)
+            lock (this.Tasks)
             {
-                this.tasks.Enqueue(() => myTask.Performe());
+                this.Tasks.Enqueue(() => myTask.Performe());
             }
 
             this.newTaskIsAwaiting.Set();
@@ -161,6 +164,127 @@ public class MyThreadPool
             }
 
             this.IsTerminated = true;
+        }
+    }
+
+    private class MyTask<T1> : IMyTask<T1>
+    {
+        private Func<T1> function;
+        private T1? result;
+        private bool isResultReady;
+        private MyThreadPool threadPool;
+
+        private List<Action> continuations;
+
+        private ManualResetEvent accessToResult;
+        private ManualResetEvent? isUpperTaskCompleted;
+        private ManualResetEvent manualResetEventForContinuations;
+
+        private Exception? exception;
+        private MyThreadPool myThreadPool;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MyTask{TResult}"/> class.
+        /// </summary>
+        /// <param name="function">Task function.</param>
+        /// <param name="myThreadPool">ThreadPool that will execute this task.</param>
+        /// <param name="isUpperTaskCompleted">Parental task ManualResetEvent (for continuation task).</param>
+        public MyTask(Func<T1> function, MyThreadPool myThreadPool,
+            ManualResetEvent? manualResetEventForContinuations = null)
+        {
+            this.function = function;
+            this.continuations = new List<Action>();
+            this.accessToResult = new ManualResetEvent(false);
+            this.myThreadPool = myThreadPool;
+            this.isUpperTaskCompleted = manualResetEventForContinuations;
+            this.manualResetEventForContinuations = new ManualResetEvent(false);
+            this.threadPool = myThreadPool;
+        }
+
+        /// <summary>
+        /// Returns true value if task has been already calculated.
+        /// </summary>
+        public bool IsCompleted => this.isResultReady;
+
+        /// <summary>
+        /// Returns the task result.
+        /// </summary>
+        public T1 Result
+        {
+            get
+            {
+                if (this.myThreadPool.IsTerminated && !this.isResultReady)
+                {
+                    throw new InvalidOperationException("Hasn't been started when the Shutdown was requested.");
+                }
+
+                this.accessToResult.WaitOne();
+                if (this.exception != null)
+                {
+                    throw new AggregateException(this.exception);
+                }
+
+                return this.result!;
+            }
+        }
+
+        /// <summary>
+        /// Creates a new task which operates with the result of this task.
+        /// </summary>
+        /// <typeparam name="T2">Value type for the continuation result.</typeparam>
+        /// <param name="func">Function for creating a new task.</param>
+        /// <returns>Task with new return value type of the function.</returns>
+        public IMyTask<T2> ContinueWith<T2>(Func<T1, T2> func)
+        {
+            lock (threadPool.Tasks)
+            {
+                if (this.result != null)
+                {
+                    return this.myThreadPool.AddTask(() => func(this.Result), this.manualResetEventForContinuations);
+                }
+
+                var continuation = new MyTask<T2>(
+                    () => func(this.Result),
+                    this.myThreadPool,
+                    this.manualResetEventForContinuations);
+                this.continuations.Add(() => continuation.Performe());
+                return continuation;
+            }
+        }
+
+        /// <summary>
+        /// Calculates task result.
+        /// </summary>
+        public void Performe()
+        {
+            try
+            {
+                if (isUpperTaskCompleted != null)
+                {
+                    this.isUpperTaskCompleted!.WaitOne();
+                }
+
+                this.result = this.function();
+
+                lock (threadPool.Tasks)
+                {
+                    if (this.continuations.Count > 0)
+                    {
+                        foreach (var continuation in this.continuations)
+                        {
+                            this.myThreadPool.AddTask(() => continuation, this.isUpperTaskCompleted);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.exception = ex;
+            }
+
+            this.isResultReady = true;
+            this.accessToResult.Set();
+            this.manualResetEventForContinuations.Set();
         }
     }
 }
