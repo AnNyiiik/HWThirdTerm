@@ -47,7 +47,7 @@ public class MyThreadPool
     /// <summary>
     /// Returns a number of threads, which calculates task at the current moment.
     /// </summary>
-    public int WorkingThreads { get; private set; }
+    public int WorkingThreads { get => workingThreads; }
 
     /// <summary>
     /// Indicates if the thread pool is active or not (ShutDown was requested).
@@ -87,12 +87,10 @@ public class MyThreadPool
                         if (isAvailable && action != null)
                         {
                             Interlocked.Increment(ref workingThreads);
-                            WorkingThreads = workingThreads;
                             isWorking[localI] = true;
                             action.Invoke();
                             isWorking[localI] = false;
                             Interlocked.Decrement(ref workingThreads);
-                            WorkingThreads = workingThreads;
                             action = null;
                         }
                     }
