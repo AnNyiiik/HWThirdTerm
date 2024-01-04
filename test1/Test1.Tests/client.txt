@@ -1,0 +1,6 @@
+﻿Hi
+first string
+second string
+third string
+By
+exit
